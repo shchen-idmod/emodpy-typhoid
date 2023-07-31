@@ -8,8 +8,8 @@ def new_intervention( camp, efficacy=1.0, mode="Shedding" ):
     TyphoidVaccine intervention wrapper. Just the intervention. No configuration yet.
     """
     intervention = s2c.get_class_with_defaults( "TyphoidVaccine", camp.schema_path )
-    intervention.effect = efficacy
-    intervention.mode = Mode
+    intervention.Effect = efficacy
+    intervention.Mode = mode
     # WaningEffect is TBD.
     return intervention
 

@@ -3,13 +3,12 @@ from emod_api.interventions import utils
 from emod_api.interventions import common
 import json
 
-def new_intervention( camp, efficacy=1.0, mode="Shedding" ):
+def new_intervention( camp, efficacy=1.0 ):
     """
     TyphoidWASH intervention wrapper. Just the intervention. No configuration yet.
     """
     intervention = s2c.get_class_with_defaults( "TyphoidWASH", camp.schema_path )
-    intervention.effect = efficacy
-    intervention.mode = Mode
+    intervention.Effect = efficacy
     # WaningEffect is TBD.
     return intervention
 

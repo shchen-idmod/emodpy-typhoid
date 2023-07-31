@@ -3,14 +3,17 @@ from emod_api.interventions import utils
 from emod_api.interventions import common
 import json
 
-def new_intervention( camp, efficacy=1.0, mode="Shedding" ):
+def new_intervention( camp, sensitivity=1.0, specificity=1.0, days_to_diag = 1, pos_event="TestedPositive", tx_fraction=1.0 ):
     """
     TyphoidCarrierDiagnostic intervention wrapper. Just the intervention. No configuration yet.
     """
     intervention = s2c.get_class_with_defaults( "TyphoidCarrierDiagnostic", camp.schema_path )
-    intervention.effect = efficacy
-    intervention.mode = Mode
-    # WaningEffect is TBD.
+    intervention.Base_Sensitivity = sensitivity
+    intervention.Base_Specificity = specificity
+    intervention.Days_To_Diagnosis = days_to_diag
+    intervention.Positive_Diagnosis_Event = pos_event
+    intervention.Treatment_Fraction = tx_fraction
+    
     return intervention
 
 def new_triggered_intervention( 
