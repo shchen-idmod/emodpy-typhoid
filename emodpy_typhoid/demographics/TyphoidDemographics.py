@@ -9,7 +9,7 @@ class TyphoidDemographics(Demographics):
     """
     def __init__(self, nodes, idref="Gridded world grump2.5arcmin", base_file=None):
         super().__init__( nodes, idref, base_file )
-        super().SetDefaultProperties()
+        #super().SetDefaultProperties()
 
 def fromBasicNode(lat=0, lon=0, pop=1e6, name=1, forced_id=1):
     """
