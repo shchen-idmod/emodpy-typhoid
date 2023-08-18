@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
+import pandas as pd
 import pathlib # for a join
-from functools import partial  # for setting Run_Number. In Jonathan Future World, Run_Number is set by dtk_pre_proc based on generic param_sweep_value...
+from functools import partial
 
 # idmtools ...
 from idmtools.assets import Asset, AssetCollection  #
@@ -24,16 +25,18 @@ def update_sim_bic(simulation, value):
 
 def update_sim_random_seed(simulation, value):
     simulation.task.config.parameters.Run_Number = value
+    return {"Run_Number": value}
 
 def set_param_fn( config ):
     config.parameters.Simulation_Type = "TYPHOID_SIM"
-    config.parameters.Simulation_Duration = 10*365.0
+    config.parameters.Simulation_Duration = 365.0
+    config.parameters.Base_Individual_Sample_Rate = 0.25
 
-    config.parameters.Enable_Birth = 0 # temporary
+    #config.parameters.Enable_Birth = 0 # temporary
     config.parameters.Minimum_End_Time = 90 
     # cover up for default bugs in schema
     config.parameters.Inset_Chart_Reporting_Start_Year = 1850 
-    config.parameters.Inset_Chart_Reporting_Stop_Year = 1850 
+    config.parameters.Inset_Chart_Reporting_Stop_Year = 2050 
     config.parameters.Enable_Demographics_Reporting = 0 
 
     return config
@@ -60,6 +63,8 @@ def build_demog():
     import emodpy_typhoid.demographics.TyphoidDemographics as Demographics # OK to call into emod-api
 
     demog = Demographics.from_template_node( lat=0, lon=0, pop=10000, name=1, forced_id=1 )
+    wb_births_df = pd.read_csv( manifest.world_bank_dataset )
+    demog.SetEquilibriumVitalDynamicsFromWorldBank( wb_births_df=wb_births_df, country='Chile', year=2005 )
     return demog
 
 
@@ -86,7 +91,9 @@ def run_test():
 
     task.handle_experiment_completion( experiment )
 
+    # download and plot some stuff.
     EMODTask.get_file_from_comps( experiment.uid, [ "InsetChart.json" ] )
+    task.cache_experiment_metadata_in_sql( experiment.uid )
     import emod_api.channelreports.plot_icj_means as plotter
     chan_data = plotter.collect( str( experiment.uid ), "Infected" )
     plotter.display( chan_data, False, "Infected", str( experiment.uid ) )
