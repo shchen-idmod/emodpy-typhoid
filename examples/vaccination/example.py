@@ -59,12 +59,8 @@ def build_camp():
     import emodpy_typhoid.interventions.typhoid_vaccine as tv
     event = tv.new_triggered_intervention(camp, start_day=1, triggers=['Births'], coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
     camp.add( event )
-    event = tv.new_scheduled_intervention(camp, start_day=3650, coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
+    event = tv.new_scheduled_intervention(camp, start_day=10*365, coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
     camp.add( event )
-
-    import emodpy_typhoid.interventions.typhoid_wash as tw
-    event = tw.new_scheduled_intervention(camp, start_day=20*365, coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
-    #camp.add( event )
 
     return camp
 
