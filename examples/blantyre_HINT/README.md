@@ -7,7 +7,18 @@ The goal of this example is to recreate: https://github.com/InstituteforDiseaseM
 But without the enviro surveillance part.
 
 Some highlights of the ESEcon scenario:
-- TBD
+- Base_Year: 1970
+- Duration: 30 Years
+- Seasonality: TBD
+- Campaign: ...
+    - Outbreak/Seeding: 1(x5/_730) :: AllPlaces :: 0.25% :: OutbreakIndividual
+    - Vaccines: TBD
+- Demographics:
+    - Initial Age: exponential.
+    - Fertility: Highly configured, declining from 1950 to 2015
+    - Natural Mortality: Highly configured, 1950 to 2015
+    - HINT groups: 8. Contact is entirely intragroup. Enviro is a linear chain.
+
 
 The COMPS run of this is here:
 
