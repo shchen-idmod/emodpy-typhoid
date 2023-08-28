@@ -119,13 +119,13 @@ def build_camp():
         # seasonal forcing
         # G-O method
         import emod_api.interventions.node_multiplier as nim
-        nim_iv = nim.new_intervention( camp, new_infectivity=2.0, profile="TRAP", rise_dur=28, peak_dur=190, fall_dur=100 )
+        nim_iv = nim.new_intervention( camp, new_infectivity=0.0, profile="TRAP", rise_dur=227, peak_dur=19, fall_dur=11 )
         #nim_iv.Transmission_Route = "ENVIRONMENTAL"
 
         import emod_api.interventions.common as comm
         event = comm.ScheduledCampaignEvent( camp, Start_Day=1, Intervention_List=[nim_iv], Number_Repetitions=-1, Timesteps_Between_Repetitions=365 )
         camp.add( event )
-    #seasonal_forcing_go()
+    seasonal_forcing_go()
 
     return camp
 
