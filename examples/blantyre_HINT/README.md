@@ -9,7 +9,12 @@ But without the enviro surveillance part.
 Some highlights of the ESEcon scenario:
 - Base_Year: 1970
 - Duration: 30 Years
-- Seasonality: TBD
+- Seasonality: [Trapezoid](https://github.com/MIzzo-IDM/EMOD-docs/blob/master/emod/images/Typhoid/enviro-amplification3.PNG)
+    - Typhoid_Environmental_Cutoff_Days: 18.8
+    - Typhoid_Environmental_Peak_Start: 290
+    - Typhoid_Environmental_Ramp_Down_Duration: 227.7
+    - Typhoid_Environmental_Ramp_Up_Duration: 11.5
+
 - Campaign: ...
     - Outbreak/Seeding: 1(x5/_730) :: AllPlaces :: 0.25% :: OutbreakIndividual
     - Vaccines: TBD
