@@ -19,6 +19,9 @@ emodpy.emod_task.dev_mode = True
 
 import manifest
 
+base_year=1970
+sim_years = 50
+
 def update_sim_bic(simulation, value):
     simulation.task.config.parameters.Base_Infectivity_Constant = value*0.1
     return {"Base_Infectivity": value}
@@ -32,7 +35,7 @@ def set_param_fn( config ):
     config.parameters.Simulation_Type = "TYPHOID_SIM"
     #config.parameters.Simulation_Type = "GENERIC_SIM"
     #config.parameters.Enable_Environmental_Route = 1 # This should be implicit with TYPHOID_SIM; Fix in C++/G-O
-    config.parameters.Simulation_Duration = 83*365.0
+    config.parameters.Simulation_Duration = sim_years*365.0
     #config.parameters.Enable_Skipping = 1  
     #config.parameters.Base_Individual_Sample_Rate = 0.2
 
@@ -44,11 +47,11 @@ def set_param_fn( config ):
     # cover up for default bugs in schema
 
     #Comment some things out while doing GENERIC_SIM testing
-    config.parameters.Base_Year = 1917 # to 1960
-    config.parameters.Inset_Chart_Reporting_Start_Year = 1917 
-    config.parameters.Inset_Chart_Reporting_Stop_Year = 2000
-    config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2001
-    config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2002
+    config.parameters.Base_Year = base_year # to 1960
+    config.parameters.Inset_Chart_Reporting_Start_Year = 1971 
+    config.parameters.Inset_Chart_Reporting_Stop_Year = 2020
+    config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2021
+    config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2022
     ##config.parameters.Infectious_Period_Exponential = 10
     ##config.parameters.Incubation_Period_Constant = 10
     ##config.parameters.Base_Infectivity_Constant = 1
@@ -104,7 +107,7 @@ def build_camp():
     #camp.add( event )
     #ob.seed( camp, Start_Day=1, Coverage=0.01, Target_Props="Geographic:A", Tot_Rep=20, Rep_Interval=365, Honor_Immunity=True )
     # 1 :: AllPlaces :: 50.0% :: OutbreakIndividual
-    ob.seed( camp, Start_Day=1, Coverage=0.5, Honor_Immunity=False )
+    ob.seed( camp, Start_Day=2, Coverage=0.5, Honor_Immunity=False )
 
     # 730(x10/_365) :: AllPlaces :: 0.5% :: OutbreakIndividual
     ob.seed( camp, Start_Day=730, Coverage=0.005, Tot_Rep=10, Rep_Interval=365, Honor_Immunity=False )
@@ -126,6 +129,14 @@ def build_camp():
         event = comm.ScheduledCampaignEvent( camp, Start_Day=1, Intervention_List=[nim_iv], Number_Repetitions=-1, Timesteps_Between_Repetitions=365 )
         camp.add( event )
     seasonal_forcing_go()
+
+    def give_vax( start_year, age ):
+         import emodpy_typhoid.interventions.typhoid_vaccine as tv
+         event = tv.new_triggered_intervention(camp, start_day=(start_year-base_year)*365, triggers=['Births'], coverage=0.85, node_ids=None, property_restrictions_list=[], co_event="Vaccinated")
+         # TBD: use common.TriggeredCampaignEvent to use the delay. The above doesn't have delays.
+         camp.add( event )
+    give_vax( start_year=2017, age=0.75 )
+
 
     return camp
 
