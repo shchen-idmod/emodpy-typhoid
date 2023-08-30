@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pandas as pd
+import math
 import pathlib # for a join
 from functools import partial
 
@@ -15,12 +16,12 @@ from idmtools_models.templated_script_task import get_script_wrapper_unix_task
 # emodpy
 from emodpy.emod_task import EMODTask
 import emodpy.emod_task 
-emodpy.emod_task.dev_mode = True
+#emodpy.emod_task.dev_mode = True
 
 import manifest
 
-base_year=1970
-sim_years = 50
+base_year=1917
+sim_years = 122
 
 def update_sim_bic(simulation, value):
     simulation.task.config.parameters.Base_Infectivity_Constant = value*0.1
@@ -29,6 +30,18 @@ def update_sim_bic(simulation, value):
 def update_sim_random_seed(simulation, value):
     #simulation.task.config.parameters.Run_Number = value
     return {"Run_Number": value}
+
+def update_sim_mortality(simulation, value):
+    # 1-20 --> 100-100
+    def convert_range(x):
+        m = (8000 - 4000) / (10 - 0)
+        b = 4000 - m * 1
+        y = m * x + b
+        return y
+    multiplier = convert_range(value)
+    #multiplier = math.pow( 2, int(value+5) )
+    simulation.task.config.parameters.x_Other_Mortality = multiplier
+    return {"x_Other_Mortality": multiplier}
 
 def set_param_fn( config ):
     # sim nature, size and scope
@@ -40,7 +53,8 @@ def set_param_fn( config ):
     #config.parameters.Base_Individual_Sample_Rate = 0.2
 
     # demographics
-    config.parameters.x_Birth = 1.1 # just to add some additional fertility
+    config.parameters.x_Birth = 20 # just to add some additional fertility
+    config.parameters.x_Other_Mortality = 200 # just to add some additional fertility
 
     #config.parameters.Enable_Birth = 0 # temporary
     #config.parameters.Minimum_End_Time = 90 
@@ -48,8 +62,8 @@ def set_param_fn( config ):
 
     #Comment some things out while doing GENERIC_SIM testing
     config.parameters.Base_Year = base_year # to 1960
-    config.parameters.Inset_Chart_Reporting_Start_Year = 1971 
-    config.parameters.Inset_Chart_Reporting_Stop_Year = 2020
+    config.parameters.Inset_Chart_Reporting_Start_Year = base_year
+    config.parameters.Inset_Chart_Reporting_Stop_Year = 2040
     config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2021
     config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2022
     ##config.parameters.Infectious_Period_Exponential = 10
@@ -146,9 +160,11 @@ def build_demog():
     """
     import emodpy_typhoid.demographics.TyphoidDemographics as Demographics # OK to call into emod-api
 
-    demog = Demographics.from_template_node( lat=0, lon=0, pop=16000, name=1, forced_id=1 )
-    wb_births_df = pd.read_csv( manifest.world_bank_dataset )
-    demog.SetEquilibriumVitalDynamicsFromWorldBank( wb_births_df=wb_births_df, country='Chile', year=1960 ) # 1960 just coz it's earliest
+    demog = Demographics.from_template_node( lat=0, lon=0, pop=1000, name=1, forced_id=1 )
+    #wb_births_df = pd.read_csv( manifest.world_bank_dataset )
+    #demog.SetEquilibriumVitalDynamicsFromWorldBank( wb_births_df=wb_births_df, country='Chile', year=1960 ) # 1960 just coz it's earliest
+    demog.SetFertilityOverTimeFromParams( years_region1=40, years_region2=(122-40), start_rate=0.025, inflection_rate=0.025, end_rate=0.007 )
+    demog.SetMortalityOverTimeFromData( manifest.mortality_data, 1917 )
 
     full_hint_matrix = {
             "contact":  {
@@ -207,7 +223,7 @@ def run_test():
 
     # Create simulation sweep with builder
     builder = SimulationBuilder()
-    builder.add_sweep_definition( update_sim_random_seed, range(1) )
+    builder.add_sweep_definition( update_sim_mortality, range(10) )
 
     # create experiment from builder
     experiment  = Experiment.from_builder(builder, task, name="Typhoid Blantyre emodpy") 
