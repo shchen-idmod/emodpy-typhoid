@@ -1,0 +1,126 @@
+{
+   "Events": [
+      {
+         "Event_Coordinator_Config": {
+            "Demographic_Coverage": 0.5,
+            "Intervention_Config": {
+               "Outbreak_Source": "PrevalenceIncrease",
+               "class": "OutbreakIndividual"
+            },
+            "Number_Repetitions": 1,
+            "Timesteps_Between_Repetitions": 1,
+            "class": "StandardInterventionDistributionEventCoordinator"
+         },
+         "Event_Name": "Outbreak",
+         "Nodeset_Config": {
+            "class": "NodeSetAll"
+         },
+         "Start_Day": 1,
+         "Target_Demographic": "Everyone",
+         "class": "CampaignEvent"
+      },
+      {
+         "Event_Coordinator_Config": {
+            "Demographic_Coverage": 0.005,
+            "Intervention_Config": {
+               "Outbreak_Source": "PrevalenceIncrease",
+               "class": "OutbreakIndividual"
+            },
+            "Number_Repetitions": 10,
+            "Timesteps_Between_Repetitions": 365,
+            "class": "StandardInterventionDistributionEventCoordinator"
+         },
+         "Event_Name": "Outbreak",
+         "Nodeset_Config": {
+            "class": "NodeSetAll"
+         },
+         "Start_Day": 730,
+         "Target_Demographic": "Everyone",
+         "class": "CampaignEvent"
+      },
+      {
+         "Campaign_Name": "Typhoid Campaign",
+         "Event_Coordinator_Config": {
+            "Intervention_Config": {
+               "Actual_IndividualIntervention_Config": {
+                  "Actual_IndividualIntervention_Configs": [
+                     {
+                        "Cost_To_Consumer": 0,
+                        "Vaccine_Take": 1,
+                        "Vaccine_Type": "AcquisitionBlocking",
+                        "Waning_Config": {
+                           "Decay_Time_Constant": 6935.0,
+                           "Decay_Time_Constant__KP_Decay": "<--MARKER",
+                           "Initial_Effect": 0.8200000000000001,
+                           "Initial_Effect__KP_Effect": "<--MARKER",
+                           "class": "WaningEffectExponential"
+                        },
+                        "class": "SimpleVaccine"
+                     }
+                  ],
+                  "Calendar": [
+                     {
+                        "Age": 270,
+                        "Age__KP_StartAge": "<--MARKER",
+                        "Probability": 0.85
+                     }
+                  ],
+                  "Dropout": 0,
+                  "class": "IVCalendar"
+               },
+               "Demographic_Coverage": 1,
+               "class": "BirthTriggeredIV"
+            },
+            "class": "StandardInterventionDistributionEventCoordinator"
+         },
+         "Nodeset_Config": {
+            "class": "NodeSetAll"
+         },
+         "Start_Year": 2017,
+         "class": "CampaignEventByYear"
+      },
+      {
+         "Event_Coordinator_Config": {
+            "Demographic_Coverage": 1,
+            "Intervention_Config": {
+               "Actual_IndividualIntervention_Configs": [
+                  {
+                     "Cost_To_Consumer": 0,
+                     "Vaccine_Take": 1,
+                     "Vaccine_Type": "AcquisitionBlocking",
+                     "Waning_Config": {
+                        "Decay_Time_Constant": 6935.0,
+                        "Decay_Time_Constant__KP_Decay": "<--MARKER",
+                        "Initial_Effect": 0.8200000000000001,
+                        "Initial_Effect__KP_Effect": "<--MARKER",
+                        "class": "WaningEffectExponential"
+                     },
+                     "class": "SimpleVaccine"
+                  }
+               ],
+               "Calendar": [
+                  {
+                     "Age": 270,
+                     "Age__KP_StartAge": "<--MARKER",
+                     "Probability": 0.85
+                  }
+               ],
+               "Dropout": 0,
+               "class": "IVCalendar"
+            },
+            "Target_Age_Max": 1,
+            "Target_Age_Min": 0,
+            "Target_Demographic": "ExplicitAgeRanges",
+            "class": "StandardInterventionDistributionEventCoordinator"
+         },
+         "Name": "Routine",
+         "Nodeset_Config": {
+            "class": "NodeSetAll"
+         },
+         "Start_Year": 2017,
+         "class": "CampaignEventByYear"
+      }
+   ],
+   "Use_Defaults": 1,
+   "class": "Campaign"
+}
