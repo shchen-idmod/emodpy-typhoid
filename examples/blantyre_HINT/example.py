@@ -36,7 +36,7 @@ def set_param_fn( config ):
     # sim nature, size and scope
     config.parameters.Simulation_Type = "TYPHOID_SIM"
     #config.parameters.Simulation_Type = "GENERIC_SIM" # for demographics
-    #config.parameters.Enable_Environmental_Route = 1 # This should be implicit with TYPHOID_SIM; Fix in C++/G-O
+    config.parameters.Enable_Environmental_Route = 1 # This should be implicit with TYPHOID_SIM; Fix in C++/G-O
     config.parameters.Simulation_Duration = sim_years*365.0
     #config.parameters.Enable_Skipping = 1  
     #config.parameters.Base_Individual_Sample_Rate = 0.25
