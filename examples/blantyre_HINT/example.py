@@ -21,54 +21,48 @@ import emodpy.emod_task
 import manifest
 
 base_year=1917
-sim_years = 122
+sim_years=122 # 100 OK
+initial_pop=9712
 
 def update_sim_bic(simulation, value):
     simulation.task.config.parameters.Base_Infectivity_Constant = value*0.1
     return {"Base_Infectivity": value}
 
 def update_sim_random_seed(simulation, value):
-    #simulation.task.config.parameters.Run_Number = value
+    simulation.task.config.parameters.Run_Number = value
     return {"Run_Number": value}
-
-def update_sim_mortality(simulation, value):
-    # 1-20 --> 100-100
-    def convert_range(x):
-        m = (8000 - 4000) / (10 - 0)
-        b = 4000 - m * 1
-        y = m * x + b
-        return y
-    multiplier = convert_range(value)
-    #multiplier = math.pow( 2, int(value+5) )
-    simulation.task.config.parameters.x_Other_Mortality = multiplier
-    return {"x_Other_Mortality": multiplier}
 
 def set_param_fn( config ):
     # sim nature, size and scope
     config.parameters.Simulation_Type = "TYPHOID_SIM"
-    #config.parameters.Simulation_Type = "GENERIC_SIM"
+    #config.parameters.Simulation_Type = "GENERIC_SIM" # for demographics
     #config.parameters.Enable_Environmental_Route = 1 # This should be implicit with TYPHOID_SIM; Fix in C++/G-O
     config.parameters.Simulation_Duration = sim_years*365.0
     #config.parameters.Enable_Skipping = 1  
-    #config.parameters.Base_Individual_Sample_Rate = 0.2
+    #config.parameters.Base_Individual_Sample_Rate = 0.25
+    config.parameters.Base_Individual_Sample_Rate = 0.1
 
     # demographics
-    config.parameters.x_Birth = 20 # just to add some additional fertility
-    config.parameters.x_Other_Mortality = 200 # just to add some additional fertility
+    #config.parameters.x_Birth = 3
+    #config.parameters.x_Other_Mortality = 100 # just to add some additional fertility
 
     #config.parameters.Enable_Birth = 0 # temporary
     #config.parameters.Minimum_End_Time = 90 
     # cover up for default bugs in schema
 
     #Comment some things out while doing GENERIC_SIM testing
-    config.parameters.Base_Year = base_year # to 1960
-    config.parameters.Inset_Chart_Reporting_Start_Year = base_year
-    config.parameters.Inset_Chart_Reporting_Stop_Year = 2040
-    config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2021
-    config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2022
-    ##config.parameters.Infectious_Period_Exponential = 10
-    ##config.parameters.Incubation_Period_Constant = 10
-    ##config.parameters.Base_Infectivity_Constant = 1
+    def typhoid_report():
+        config.parameters.Base_Year = base_year # to 1960
+        config.parameters.Inset_Chart_Reporting_Start_Year = base_year
+        config.parameters.Inset_Chart_Reporting_Stop_Year = 2040
+        config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2021
+        config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2022
+    typhoid_report()
+    def generic_infect(): # for demographics
+        config.parameters.Infectious_Period_Exponential = 10
+        config.parameters.Incubation_Period_Constant = 10
+        config.parameters.Base_Infectivity_Constant = 1
+    #generic_infect()
 
 
     # reporting
@@ -117,14 +111,14 @@ def build_camp():
     print(f"Telling emod-api to use {manifest.schema_file} as schema.")
     camp.set_schema( manifest.schema_file )
 
-    #event = ob.new_intervention( camp, timestep=1, cases=1000 )
-    #camp.add( event )
-    #ob.seed( camp, Start_Day=1, Coverage=0.01, Target_Props="Geographic:A", Tot_Rep=20, Rep_Interval=365, Honor_Immunity=True )
-    # 1 :: AllPlaces :: 50.0% :: OutbreakIndividual
-    ob.seed( camp, Start_Day=2, Coverage=0.5, Honor_Immunity=False )
+    def seed():
+        #ob.seed( camp, Start_Day=1, Coverage=0.01, Target_Props="Geographic:A", Tot_Rep=20, Rep_Interval=365, Honor_Immunity=True )
+        # 1 :: AllPlaces :: 50.0% :: OutbreakIndividual
+        ob.seed( camp, Start_Day=2, Coverage=0.5, Honor_Immunity=False )
 
-    # 730(x10/_365) :: AllPlaces :: 0.5% :: OutbreakIndividual
-    ob.seed( camp, Start_Day=730, Coverage=0.005, Tot_Rep=10, Rep_Interval=365, Honor_Immunity=False )
+        # 730(x10/_365) :: AllPlaces :: 0.5% :: OutbreakIndividual
+        ob.seed( camp, Start_Day=730, Coverage=0.005, Tot_Rep=10, Rep_Interval=365, Honor_Immunity=False )
+    seed()
 
     import emodpy_typhoid.interventions.typhoid_vaccine as tv
     event = tv.new_triggered_intervention(camp, start_day=20*365, triggers=['Births'], coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
@@ -151,8 +145,8 @@ def build_camp():
          camp.add( event )
     give_vax( start_year=2017, age=0.75 )
 
-
     return camp
+
 
 def build_demog():
     """
@@ -160,11 +154,22 @@ def build_demog():
     """
     import emodpy_typhoid.demographics.TyphoidDemographics as Demographics # OK to call into emod-api
 
-    demog = Demographics.from_template_node( lat=0, lon=0, pop=1000, name=1, forced_id=1 )
+    demog = Demographics.from_template_node( lat=0, lon=0, pop=initial_pop, name=1, forced_id=1 )
     #wb_births_df = pd.read_csv( manifest.world_bank_dataset )
     #demog.SetEquilibriumVitalDynamicsFromWorldBank( wb_births_df=wb_births_df, country='Chile', year=1960 ) # 1960 just coz it's earliest
-    demog.SetFertilityOverTimeFromParams( years_region1=40, years_region2=(122-40), start_rate=0.025, inflection_rate=0.025, end_rate=0.007 )
-    demog.SetMortalityOverTimeFromData( manifest.mortality_data, 1917 )
+    demog.SetInitialAgeLikeSubSaharanAfrica()
+    inflection_year = 1960
+    #demog.SetFertilityOverTimeFromParams( years_region1=40, years_region2=(122-40), start_rate=0.025, inflection_rate=0.025, end_rate=0.007 )
+    yrs_region1 = inflection_year-base_year
+    yrs_region2 = max((sim_years-yrs_region1),0)
+    
+    #demog.SetFertilityOverTimeFromParams( years_region1=yrs_region1, years_region2=yrs_region2, start_rate=0.1662, inflection_rate=0.1662, end_rate=0.0521 )
+    # 1917-1960( 43 years): high fert -- for typhoid, demog file should have absolute year values in it.
+    # years_region1=1960 (ish)
+    # years_region2=2015-1960=55
+    # stays at low value from 2017 to end
+    demog.SetFertilityOverTimeFromParams( years_region1=yrs_region1+base_year, years_region2=55, start_rate=0.1662, inflection_rate=0.1662, end_rate=0.0521 )
+    demog.SetMortalityOverTimeFromData( manifest.mortality_data, 0 )
 
     full_hint_matrix = {
             "contact":  {
@@ -185,7 +190,6 @@ def build_demog():
             "environmental" : {
                 "Matrix": 
                 [
-                    [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
                     [ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
                     [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
                     [ 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
@@ -193,10 +197,12 @@ def build_demog():
                     [ 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ],
                     [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
                     [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 ],
-                    [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 ]
+                    [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 ],
+                    [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
                 ]
             }
         }
+
     """
     demog.AddIndividualPropertyAndHINT(
             Property="Geographic",
@@ -205,6 +211,7 @@ def build_demog():
             TransmissionMatrix=full_hint_matrix
         )
     """
+
     return demog
 
 
@@ -223,7 +230,7 @@ def run_test():
 
     # Create simulation sweep with builder
     builder = SimulationBuilder()
-    builder.add_sweep_definition( update_sim_mortality, range(10) )
+    builder.add_sweep_definition( update_sim_random_seed, range(10) )
 
     # create experiment from builder
     experiment  = Experiment.from_builder(builder, task, name="Typhoid Blantyre emodpy") 

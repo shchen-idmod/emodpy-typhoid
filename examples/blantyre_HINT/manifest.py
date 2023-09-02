@@ -8,3 +8,4 @@ assets_input_dir="Assets"
 reporters=model_dl_dir
 sif="dtk_centos.id"
 world_bank_dataset="../world_bank_dataset.csv"
+mortality_data="Blantyre_mortality_1year.csv"
