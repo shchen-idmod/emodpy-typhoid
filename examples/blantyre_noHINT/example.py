@@ -19,6 +19,7 @@ import emodpy.emod_task
 #emodpy.emod_task.dev_mode = True
 
 import manifest
+from emodpy_typhoid.interventions.typhoid_environment_fource import new_intervention
 
 base_year=1917
 sim_years=122 # 100 OK
@@ -55,7 +56,7 @@ def set_param_fn( config ):
         config.parameters.Base_Year = base_year # to 1960
         config.parameters.Inset_Chart_Reporting_Start_Year = base_year
         config.parameters.Inset_Chart_Reporting_Stop_Year = 2040
-        config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2040
+        config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2000
         config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2041
     typhoid_report()
     def generic_infect(): # for demographics
@@ -137,7 +138,21 @@ def build_camp():
         import emod_api.interventions.common as comm
         event = comm.ScheduledCampaignEvent( camp, Start_Day=1, Intervention_List=[nim_iv], Number_Repetitions=-1, Timesteps_Between_Repetitions=365 )
         camp.add( event )
-    seasonal_forcing_go()
+    #seasonal_forcing_go()
+
+    def seasonal_forcing_go1():
+        # seasonal forcing
+        # G-O method
+        import emod_api.interventions.node_multiplier as nim
+        multuplier_by_duration = {}
+        multuplier_by_duration['Times'] = [0, 287, 288, 299, 300, 365]
+        multuplier_by_duration['Values'] = [1, 1, 0, 0, 1, 1]
+        nim_iv = new_intervention(camp, multuplier_by_duration)
+
+        import emod_api.interventions.common as comm
+        event = comm.ScheduledCampaignEvent( camp, Start_Day=1, Intervention_List=[nim_iv], Number_Repetitions=-1, Timesteps_Between_Repetitions=365 )
+        camp.add( event )
+    seasonal_forcing_go1()
 
     def give_vax( start_year, age ):
          import emodpy_typhoid.interventions.typhoid_vaccine as tv
@@ -178,7 +193,7 @@ def build_demog():
 def run_test():
     # Create a platform
     # Show how to dynamically set priority and node_group
-    platform = Platform("SLURM", node_group="idm_48cores", priority="Highest") 
+    platform = Platform("SLURM", node_group="idm_48cores", priority="Highest")
 
     task = EMODTask.from_default2(config_path="config_from_py.json", eradication_path=manifest.eradication_path, campaign_builder=build_camp, demog_builder=build_demog, schema_path=manifest.schema_file, param_custom_cb=set_param_fn, ep4_custom_cb=None)
     #task = EMODTask.from_files(config_path="config_comps_ref.json", eradication_path=manifest.eradication_path, campaign_path="campaign_routine_exp.json", demographics_paths=["TestDemographics_Mystery_Fert.json"], ep4_path=None)
@@ -193,7 +208,7 @@ def run_test():
     builder.add_sweep_definition( update_sim_random_seed, range(10) )
 
     # create experiment from builder
-    experiment  = Experiment.from_builder(builder, task, name="Typhoid Blantyre emodpy") 
+    experiment  = Experiment.from_builder(builder, task, name="Typhoid Blantyre emodpy")
     # The last step is to call run() on the ExperimentManager to run the simulations.
     experiment.run(wait_until_done=True, platform=platform)
 
