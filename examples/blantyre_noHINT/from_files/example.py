@@ -56,8 +56,9 @@ def run():
     builder.add_sweep_definition( update_sim_random_seed, range(4) )
     builder.add_sweep_definition( update_sim_param, range(4) )
 
+    exp_name = "Typhoid Blantyre NoHINT emodpy from_files"
     # create experiment from builder
-    experiment  = Experiment.from_builder(builder, task, name="Typhoid Blantyre NoHINT emodpy from_files") 
+    experiment  = Experiment.from_builder(builder, task, name=exp_name ) 
     # The last step is to call run() on the ExperimentManager to run the simulations.
     experiment.run(wait_until_done=True, platform=platform)
 
@@ -65,11 +66,14 @@ def run():
 
     # download and plot some stuff.
     EMODTask.get_file_from_comps( experiment.uid, [ "InsetChart.json" ] )
-    task.cache_experiment_metadata_in_sql( experiment.uid )
+    task.cache_experiment_metadata_in_sql( experiment.uid, path=exp_name )
     #import emod_api.channelreports.plot_icj_means as plotter
     #chan_data = plotter.collect( "Typhoid Blantyre NoHINT emodpy from_files".replace( " ", "_" ), "Infected" )
     #plotter.display( chan_data, False, "Infected", str( experiment.uid ) )
     
 
 if __name__ == "__main__":
+    # Uncomment these two lines just for when you run first time after installing a new emod-typhoid module.
+    #import emod_typhoid.bootstrap as dtk
+    #dtk.setup( manifest.model_dl_dir )
     run()
