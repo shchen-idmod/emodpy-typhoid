@@ -97,11 +97,11 @@ def run_test():
 
     # download and plot some stuff.
     if experiment.succeeded:
-        EMODTask.get_file_from_comps( experiment.uid, [ "InsetChart.json", "ReportTyphoidByAgeAndGender.csv" ] )
+        EMODTask.get_file_from_comps( experiment.uid, [ "InsetChart.json", "ReportTyphoidByAgeAndGender.csv" ], group=True )
         task.cache_experiment_metadata_in_sql( experiment.uid )
-        import emod_api.channelreports.plot_icj_means as plotter
-        chan_data = plotter.collect( str( experiment.uid ), "Infected" )
-        plotter.display( chan_data, False, "Infected", str( experiment.uid ) )
+        #import emod_api.channelreports.plot_icj_means as plotter
+        #chan_data = plotter.collect( str( experiment.uid ), "Infected" )
+        #plotter.display( chan_data, False, "Infected", str( experiment.uid ) )
     
 
 if __name__ == "__main__":
