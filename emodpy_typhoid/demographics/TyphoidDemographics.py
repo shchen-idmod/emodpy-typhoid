@@ -9,6 +9,9 @@ class TyphoidDemographics(Demographics):
     """
     def __init__(self, nodes, idref="Gridded world grump2.5arcmin", base_file=None):
         super().__init__( nodes, idref, base_file )
+        self.raw["Defaults"]["IndividualAttributes"]["PrevalenceDistributionFlag"] = 0
+        self.raw["Defaults"]["IndividualAttributes"]["PrevalenceDistribution1"] = 0
+        self.raw["Defaults"]["IndividualAttributes"]["PrevalenceDistribution2"] = 0
         #super().SetDefaultProperties()
 
 def fromBasicNode(lat=0, lon=0, pop=1e6, name=1, forced_id=1):
