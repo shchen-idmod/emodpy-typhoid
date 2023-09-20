@@ -31,13 +31,17 @@ def set_param_fn( config ):
     config.parameters.Simulation_Type = "TYPHOID_SIM"
     config.parameters.Simulation_Duration = 365.0
     config.parameters.Base_Individual_Sample_Rate = 0.25
-
     #config.parameters.Enable_Birth = 0 # temporary
-    config.parameters.Minimum_End_Time = 90 
+    #config.parameters.Minimum_End_Time = 90 
     # cover up for default bugs in schema
-    config.parameters.Inset_Chart_Reporting_Start_Year = 1850 
+    config.parameters.Inset_Chart_Reporting_Start_Year = 1900 
     config.parameters.Inset_Chart_Reporting_Stop_Year = 2050 
     config.parameters.Enable_Demographics_Reporting = 0 
+    config.parameters.Node_Contagion_Decay_Rate = 0.33
+
+    # when using 2018 binary
+    import emodpy_typhoid.config as config_utils
+    config_utils.cleanup_for_2018_mode( config )
 
     return config
 
@@ -92,15 +96,16 @@ def run_test():
     task.handle_experiment_completion( experiment )
 
     # download and plot some stuff.
-    EMODTask.get_file_from_comps( experiment.uid, [ "InsetChart.json" ] )
-    task.cache_experiment_metadata_in_sql( experiment.uid )
-    import emod_api.channelreports.plot_icj_means as plotter
-    chan_data = plotter.collect( str( experiment.uid ), "Infected" )
-    plotter.display( chan_data, False, "Infected", str( experiment.uid ) )
+    if experiment.succeeded:
+        EMODTask.get_file_from_comps( experiment.uid, [ "InsetChart.json", "ReportTyphoidByAgeAndGender.csv" ] )
+        task.cache_experiment_metadata_in_sql( experiment.uid )
+        import emod_api.channelreports.plot_icj_means as plotter
+        chan_data = plotter.collect( str( experiment.uid ), "Infected" )
+        plotter.display( chan_data, False, "Infected", str( experiment.uid ) )
     
 
 if __name__ == "__main__":
     import emod_typhoid.bootstrap as dtk
-    dtk.setup( manifest.model_dl_dir )
+    #dtk.setup( manifest.model_dl_dir )
     
     run_test()
