@@ -3,7 +3,7 @@ from emod_api.interventions import utils
 from emod_api.interventions import common
 import json
 
-def new_intervention( camp, efficacy=1.0, mode="Shedding" ):
+def new_intervention( camp, efficacy=0.82, mode="Shedding" ):
     """
     TyphoidVaccine intervention wrapper. Just the intervention. No configuration yet.
     """
@@ -11,10 +11,15 @@ def new_intervention( camp, efficacy=1.0, mode="Shedding" ):
     intervention.Effect = efficacy
     intervention.Mode = mode
     # WaningEffect is TBD.
+    intervention.Changing_Effect = s2c.get_class_with_defaults( "WaningEffectExponential" )
+    intervention.Changing_Effect.Initial_Effect = efficacy
+    intervention.Changing_Effect.Decay_Time_Constant = 6935.0
     return intervention
 
 def new_triggered_intervention( 
         camp, 
+        efficacy=0.82,
+        mode="Shedding",
         start_day=1, 
         triggers=[ "Births" ],
         coverage=1.0, 
@@ -26,7 +31,7 @@ def new_triggered_intervention(
     Distribute TyphoidVaccine when something happens as determined by a signal published from the
     model or another campaign event.
     """
-    iv = new_intervention( camp )
+    iv = new_intervention( camp, efficacy, mode )
 
     #event = common.ScheduledCampaignEvent( camp, Start_Day=start_day, Demographic_Coverage=coverage, Intervention_List=[ act_intervention, bcast_intervention ], Node_Ids=nodeIDs, Property_Restrictions=property_restrictions_list )
     event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Triggers=triggers, Demographic_Coverage=coverage, Intervention_List=[ iv ], Node_Ids=node_ids, Property_Restrictions=property_restrictions_list, Event_Name="Triggered Typhoid Vax" )
@@ -35,6 +40,8 @@ def new_triggered_intervention(
 
 def new_scheduled_intervention( 
         camp, 
+        efficacy=0.82,
+        mode="Shedding",
         start_day=1, 
         coverage=1.0, 
         node_ids=None,
@@ -45,7 +52,7 @@ def new_scheduled_intervention(
     Distribute TyphoidVaccine when something happens as determined by a signal published from the
     model or another campaign event.
     """
-    iv = new_intervention( camp )
+    iv = new_intervention( camp, efficacy, mode )
 
     #event = common.ScheduledCampaignEvent( camp, Start_Day=start_day, Demographic_Coverage=coverage, Intervention_List=[ act_intervention, bcast_intervention ], Node_Ids=nodeIDs, Property_Restrictions=property_restrictions_list )
     event = common.ScheduledCampaignEvent( camp, Start_Day=start_day, Demographic_Coverage=coverage, Intervention_List=[ iv ], Node_Ids=node_ids, Property_Restrictions=property_restrictions_list )
