@@ -3,23 +3,25 @@ from emod_api.interventions import utils
 from emod_api.interventions import common
 import json
 
-def new_intervention( camp, efficacy=0.82, mode="Shedding" ):
+def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, decay_constant=6935.0 ):
     """
     TyphoidVaccine intervention wrapper. Just the intervention. No configuration yet.
     """
     intervention = s2c.get_class_with_defaults( "TyphoidVaccine", camp.schema_path )
     intervention.Effect = efficacy
     intervention.Mode = mode
-    # WaningEffect is TBD.
-    intervention.Changing_Effect = s2c.get_class_with_defaults( "WaningEffectExponential" )
+    intervention.Changing_Effect = s2c.get_class_with_defaults( "WaningEffectBoxExponential" )
     intervention.Changing_Effect.Initial_Effect = efficacy
-    intervention.Changing_Effect.Decay_Time_Constant = 6935.0
+    intervention.Changing_Effect.Box_Duration = constant_period
+    intervention.Changing_Effect.Decay_Time_Constant = decay_constant
     return intervention
 
 def new_triggered_intervention( 
         camp, 
         efficacy=0.82,
         mode="Shedding",
+        constant_period=0,
+        decay_constant=6935.0,
         start_day=1, 
         triggers=[ "Births" ],
         coverage=1.0, 
@@ -42,6 +44,8 @@ def new_scheduled_intervention(
         camp, 
         efficacy=0.82,
         mode="Shedding",
+        constant_period=0,
+        decay_constant=6935.0,
         start_day=1, 
         coverage=1.0, 
         node_ids=None,
