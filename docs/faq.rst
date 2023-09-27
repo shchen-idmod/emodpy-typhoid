@@ -7,7 +7,6 @@ questions are answered below. The most common questions are answered below.
 For questions related to functionality in related packages, see the
 following documentation:
 
-* :doc:`emod-typhoid:faq` for |EMOD_s|
 * :doc:`idmtools:faq` for |IT_s|
 * :doc:`emod_api:faq` for |emod_api|
 * :doc:`emodpy:faq` for |EMODPY_s|  
