@@ -2,12 +2,12 @@
 Frequently asked questions
 ==========================
 
-As you get started with |EMODPY_malaria|, you may have questions. The most common
+As you get started with |EMODPY_typhoid|, you may have questions. The most common
 questions are answered below. The most common questions are answered below. 
 For questions related to functionality in related packages, see the
 following documentation:
 
-* :doc:`emod-malaria:faq` for |EMOD_s|
+* :doc:`emod-typhoid:faq` for |EMOD_s|
 * :doc:`idmtools:faq` for |IT_s|
 * :doc:`emod_api:faq` for |emod_api|
 * :doc:`emodpy:faq` for |EMODPY_s|  
@@ -29,7 +29,7 @@ What are some of the key differences for people used to using dtk-tools?
 Do I need to install a whole bunch of Python modules? Where do I get that list?
 ===============================================================================
 
-No. You should only have to install emodpy-malaria, and everything else should come as a dependency automatically. If you are starting from a workflow repo, there should be a requirements.txt file that lists a particular version of emodpy-malaria. Then 'pip install -r requirements.txt' is what you should expect to do.
+No. You should only have to install emodpy-typhoid, and everything else should come as a dependency automatically. If you are starting from a workflow repo, there should be a requirements.txt file that lists a particular version of emodpy-typhoid. Then 'pip install -r requirements.txt' is what you should expect to do.
 
 Is there an easier way than typing --index-url with that long URL every time I use pip?
 =======================================================================================
@@ -76,15 +76,15 @@ What version of Python should I be using?
 
 At least Python 3.7.7. If you are installing a new version of Python, feel free to go all the way forward to a Python 3.9.x. 3.8 is probably the sweet spot of "known to work and still not considered old".
 
-What if I want a particular version of emodpy-malaria?
+What if I want a particular version of emodpy-typhoid?
 ======================================================
 ::
 
-    pip install emodpy-malaria==1.2.3
+    pip install emodpy-typhoid==1.2.3
 
 Should get you what you need.
 
-What if I want to make changes to emodpy-malaria and run with those, instead of a released version?
+What if I want to make changes to emodpy-typhoid and run with those, instead of a released version?
 ===================================================================================================
 
 (This is a duplicate.)
@@ -103,7 +103,7 @@ Option 2: Creating a wheel from your local code and pip install it (each time yo
 
 Some people prefer option 1 because it's "one and done". Some people prefer option 2 because it keeps you thinking in terms of packaging, versioning, and installing even while you're developing.
 
-I pip installed |EMODPY_malaria|, but I want to make changes. How should I do that?
+I pip installed |EMODPY_typhoid|, but I want to make changes. How should I do that?
 ===================================================================================
 
 Install at a command prompt using the following::
@@ -111,7 +111,7 @@ Install at a command prompt using the following::
     python package_setup.py develop
 
 This method is the most popular and proven, though there are some other
-options. Installing this way means that the |EMODPY_malaria| module in
+options. Installing this way means that the |EMODPY_typhoid| module in
 site-packages actually points to the same code as you have checked out in git.
 For more detail, see this `Stack Overflow post
 <https://stackoverflow.com/questions/19048732/python-setup-py-develop-vs-install#19048754>`_.
@@ -138,9 +138,9 @@ script/file that sets the configuration parameters.
 
 Are there defaults?
    Great question. If you don't set any configuration parameters, they will have
-   defaults based on the schema. The malaria team has set team defaults in
-   :py:meth:`emodpy_malaria.config.set_team_defaults`. These defaults can be seen
-   in `config.py <https://github.com/InstituteforDiseaseModeling/emodpy-malaria/blob/main/emodpy_malaria/config.py>`_.
+   defaults based on the schema. The typhoid team has set team defaults in
+   :py:meth:`emodpy_typhoid.config.set_team_defaults`. These defaults can be seen
+   in `config.py <https://github.com/InstituteforDiseaseModeling/emodpy-typhoid/blob/main/emodpy_typhoid/config.py>`_.
 
 
 How do I specify the log level for |EMOD_s|? I get a schema error when I try to set it now.
@@ -163,14 +163,14 @@ A helper function to make this task even easier may be coming shortly.
 
 Where else should I search for functions?
 =========================================
-Yes, `emod-api <https://docs.idmod.org/projects/emod-api/en/latest/>`_. Any functionality that is not malaria-specific (or disease-specific) will be found in emod-api. In particular you'll probably find very useful functions for crafting campaigns in `emod-api.interventions.common <https://docs.idmod.org/projects/emod-api/en/latest/emod_api.interventions.common.html>`_, such as the `ScheduledCampaignEvent <https://docs.idmod.org/projects/emod-api/en/latest/emod_api.interventions.common.html#emod_api.interventions.common.ScheduledCampaignEvent>`_ function and the `TriggeredCampaignEvent <https://docs.idmod.org/projects/emod-api/en/latest/emod_api.interventions.common.html#emod_api.interventions.common.TriggeredCampaignEvent>`_ function.
+Yes, `emod-api <https://docs.idmod.org/projects/emod-api/en/latest/>`_. Any functionality that is not typhoid-specific (or disease-specific) will be found in emod-api. In particular you'll probably find very useful functions for crafting campaigns in `emod-api.interventions.common <https://docs.idmod.org/projects/emod-api/en/latest/emod_api.interventions.common.html>`_, such as the `ScheduledCampaignEvent <https://docs.idmod.org/projects/emod-api/en/latest/emod_api.interventions.common.html#emod_api.interventions.common.ScheduledCampaignEvent>`_ function and the `TriggeredCampaignEvent <https://docs.idmod.org/projects/emod-api/en/latest/emod_api.interventions.common.html#emod_api.interventions.common.TriggeredCampaignEvent>`_ function.
 
 
 Do I need to be connected to the VPN?
 =====================================
-The original way of procuring the model binary itself was via a call to get_model_files(). This required you to be VPN-ed in. This is no longer the preferred approach. Instead you will want to use the 'bootstrap' approach. This involves installing the emod_malaria package, which should happen automatically, and using code like::
+The original way of procuring the model binary itself was via a call to get_model_files(). This required you to be VPN-ed in. This is no longer the preferred approach. Instead you will want to use the 'bootstrap' approach. This involves installing the emod_typhoid package, which should happen automatically, and using code like::
 
-    import emod_malaria.bootstrap as dtk
+    import emod_typhoid.bootstrap as dtk
     dtk.setup(...)
 
 This does not require VPN. The value you pass to setup is the path where the model files will be put.
@@ -207,7 +207,7 @@ Is there a multi-node or spatial example?
 Yes. See:
 
   * examples/migration_spatial_vector_sim
-  * examples/migration_spatial_malaria_sim
+  * examples/migration_spatial_typhoid_sim
   * examples/jonr_1
 
 Are there simple campaign/intervention examples?
