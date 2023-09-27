@@ -39,7 +39,7 @@ jobs:
         pip install -r docs/requirements.txt --index-url=https://packages.idmod.org/api/pypi/pypi-production/simple
 
     - name: Build using the new IDM Github Action
-      uses:  IDMPublicActions/BuildTheDocs@v1.0.2
+      uses:  InstituteforDiseaseModeling/IDMBuildTheDocs@v1.0.0
       with:
          blob_endpoint: 'https://idmdocsstaging.z5.web.core.windows.net'
          target_location: 'idm/${{ github.repository }}'
