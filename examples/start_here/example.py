@@ -9,12 +9,16 @@ from idmtools.assets import Asset, AssetCollection  #
 from idmtools.builders import SimulationBuilder
 from idmtools.core.platform_factory import Platform
 from idmtools.entities.experiment import Experiment
+from idmtools.entities.templated_simulation import TemplatedSimulations
 from idmtools_platform_comps.utils.python_requirements_ac.requirements_to_asset_collection import RequirementsToAssetCollection
 from idmtools_models.templated_script_task import get_script_wrapper_unix_task
-
+from config_sweep_builders import get_sweep_builders
 # emodpy
 from emodpy.emod_task import EMODTask
-import emodpy.emod_task 
+import emodpy.emod_task
+
+import params
+
 emodpy.emod_task.dev_mode = True
 
 import manifest
@@ -30,7 +34,8 @@ def update_sim_random_seed(simulation, value):
 def set_param_fn( config ):
     config.parameters.Simulation_Type = "TYPHOID_SIM"
     config.parameters.Simulation_Duration = 365.0
-    config.parameters.Base_Individual_Sample_Rate = 0.25
+    config.parameters.Base_Individual_Sample_Rate = 1
+    config.parameters.Base_Infectivity = 0.3
     #config.parameters.Enable_Birth = 0 # temporary
     #config.parameters.Minimum_End_Time = 90 
     # cover up for default bugs in schema
@@ -58,6 +63,13 @@ def build_camp():
 
     event = ob.new_intervention( camp, timestep=1, cases=1 )
     camp.add( event )
+
+    import emodpy_typhoid.interventions.typhoid_vaccine as tv
+    event_vax = tv.new_triggered_intervention(camp, start_day=30,
+                                              triggers=['Births'],
+                                              coverage=0.85, node_ids=None, property_restrictions_list=[],
+                                              co_event="Vaccinated")
+    camp.add(event_vax)
     return camp
 
 def build_demog():
@@ -72,7 +84,7 @@ def build_demog():
     return demog
 
 
-def run_test():
+def run_test(**kwargs):
     # Create a platform
     # Show how to dynamically set priority and node_group
     platform = Platform("SLURM", node_group="idm_48cores", priority="Highest") 
@@ -85,14 +97,12 @@ def run_test():
     task.set_sif( manifest.sif )
 
     # Create simulation sweep with builder
-    builder = SimulationBuilder()
-    builder.add_sweep_definition( update_sim_random_seed, range(5) )
-
-    # create experiment from builder
-    experiment  = Experiment.from_builder(builder, task, name="Typhoid Hello World") 
-    # The last step is to call run() on the ExperimentManager to run the simulations.
-    experiment.run(wait_until_done=True, platform=platform)
-
+    kwargs['platform'] = platform
+    builders = get_sweep_builders(**kwargs)
+    ts = TemplatedSimulations(base_task=task, builders=builders)
+    # # create experiment from builder
+    experiment = Experiment.from_template(ts, name=params.exp_name)
+    experiment.run(wait_until_done=True)
     task.handle_experiment_completion( experiment )
 
     # download and plot some stuff.
@@ -106,6 +116,6 @@ def run_test():
 
 if __name__ == "__main__":
     import emod_typhoid.bootstrap as dtk
-    #dtk.setup( manifest.model_dl_dir )
-    
+    dtk.setup( manifest.model_dl_dir )
+    #
     run_test()
