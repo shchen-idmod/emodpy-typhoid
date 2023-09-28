@@ -4,7 +4,7 @@
 #      - It uploads the generated files to IDMs Azure blob container
 # If the action is triggered from a PR then it appends a message with the resulting URL for the HTML build.
 
-name: Rebuild hiv Docs
+name: Rebuild emodpy-typhoid docs
 on:
   push:
     paths: 
