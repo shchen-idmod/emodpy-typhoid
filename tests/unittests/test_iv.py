@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import pathlib
@@ -89,8 +90,11 @@ class TestTyphoidInterventions(unittest.TestCase):
         cov = 0.7
         decay_constant = 1234
         efficacy = 0.8
+        property_restrictions_list = ['Demo:1']
+        expected_property_restrictions_list = copy.deepcopy(property_restrictions_list)
         event = ty.new_scheduled_intervention(camp=self.camp, start_day=start_day, coverage=cov, efficacy=efficacy,
-                                              decay_constant=decay_constant)
+                                              decay_constant=decay_constant,
+                                              property_restrictions_list=property_restrictions_list)
         self.parse_intervention(event)
         self.assertEqual(event['Start_Day'], float(start_day))
         self.assertEqual(self.intervention_config['Intervention_Name'], 'TyphoidVaccine')
@@ -100,6 +104,7 @@ class TestTyphoidInterventions(unittest.TestCase):
         self.assertEqual(self.intervention_config['Changing_Effect']['Initial_Effect'], float(efficacy))
         self.assertEqual(self.intervention_config['Effect'], float(efficacy))
         self.assertEqual(self.intervention_config['Mode'], 'Shedding')
+        self.assertListEqual(self.event_coordinator['Property_Restrictions'], expected_property_restrictions_list)
 
     # comment out this test since there is no TyphoidWASH in schema
     # def test_typhoid_wash_intervention(self):
