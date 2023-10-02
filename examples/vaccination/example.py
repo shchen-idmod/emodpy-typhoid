@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pandas as pd
+import numpy as np # just for linspace
 import pathlib # for a join
 from functools import partial
 
@@ -16,6 +17,8 @@ from idmtools_models.templated_script_task import get_script_wrapper_unix_task
 from emodpy.emod_task import EMODTask
 import emodpy.emod_task 
 emodpy.emod_task.dev_mode = True
+import emod_api.interventions.common as comm 
+#comm.old_adhoc_trigger_style = False
 
 import manifest
 
@@ -33,17 +36,22 @@ def set_param_fn( config ):
     config.parameters.Base_Individual_Sample_Rate = 0.2
 
     #config.parameters.Enable_Birth = 0 # temporary
-    config.parameters.Minimum_End_Time = 90 
+    #config.parameters.Minimum_End_Time = 90 
     # cover up for default bugs in schema
     config.parameters.Base_Year = 2000
-    config.parameters.Inset_Chart_Reporting_Start_Year = 1850 
+    config.parameters.Inset_Chart_Reporting_Start_Year = 1900 
     config.parameters.Inset_Chart_Reporting_Stop_Year = 2050 
     config.parameters.Enable_Demographics_Reporting = 0 
+    #config.parameters.Report_Event_Recorder_Events = [ "VaccineDistributed" ]
+    #config.parameters["Custom_Events"] = [ "VaccineDistributed" ]
 
+    # when using 2018 binary
+    import emodpy_typhoid.config as config_utils
+    config_utils.cleanup_for_2018_mode( config )
     return config
 
 
-def build_camp():
+def build_camp( start_day=1, vax_eff = 0.82 ):
     """
     Build a campaign input file for the DTK using emod_api. 
     """
@@ -57,9 +65,22 @@ def build_camp():
     camp.add( event )
 
     import emodpy_typhoid.interventions.typhoid_vaccine as tv
-    event = tv.new_triggered_intervention(camp, start_day=1, triggers=['Births'], coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
-    camp.add( event )
-    event = tv.new_scheduled_intervention(camp, start_day=10*365, coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
+    import emod_api.interventions.common as comm 
+    #event = tv.new_triggered_intervention(camp, start_day=1, triggers=['Births'], coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
+    #camp.add( event )
+    #event = tv.new_scheduled_intervention(camp, start_day=10*365, coverage=1.0, node_ids=None, property_restrictions_list=[], co_event=None)
+    #camp.add( event )
+    tv_iv = tv.new_intervention( camp, efficacy=vax_eff )
+    notification_iv = comm.BroadcastEvent( camp, "VaccineDistributed" )
+            #"Delay_Distribution": "FIXED_DURATION",
+    vax_plus_msg = comm.MultiInterventionDistributor( camp, [ tv_iv, notification_iv ] )
+    delay_dict = {
+            "Delay_Period_Min": 265,
+            "Delay_Period_Max": 275
+            }
+    #event = comm.triggered_campaign_event_with_optional_delay( camp, start_day=1, intervention=[tv_iv,notification_iv], triggers=["Births"], delay=delay_dict )
+    event = comm.triggered_campaign_event_with_optional_delay( camp, start_day=start_day, intervention=tv_iv, triggers=["Births"], delay=delay_dict )
+    #event = comm.triggered_campaign_event_with_optional_delay( camp, start_day=1, intervention=vax_plus_msg, triggers=["Births"], delay=delay_dict )
     camp.add( event )
 
     return camp
@@ -83,14 +104,27 @@ def run_test():
 
     task = EMODTask.from_default2(config_path="config.json", eradication_path=manifest.eradication_path, campaign_builder=build_camp, demog_builder=build_demog, schema_path=manifest.schema_file, param_custom_cb=set_param_fn, ep4_custom_cb=None)
 
-    print("Adding asset dir...")
-    task.common_assets.add_directory(assets_directory=manifest.reporters, relative_path="reporter_plugins")
+    #print("Adding asset dir...")
+    #task.common_assets.add_directory(assets_directory=manifest.reporters, relative_path="reporter_plugins")
 
     task.set_sif( manifest.sif )
 
     # Create simulation sweep with builder
     builder = SimulationBuilder()
-    builder.add_sweep_definition( update_sim_random_seed, range(5) )
+    #builder.add_sweep_definition( update_sim_random_seed, range(1) )
+    def update_campaign_efficacy(simulation, value):
+        build_campaign_partial = partial(build_camp, vax_eff=value)
+        simulation.task.create_campaign_from_callback(build_campaign_partial)
+        return {"vax_efficacy": value}
+    def update_campaign_start(simulation, value):
+        build_campaign_partial = partial(build_camp, start_day=value)
+        simulation.task.create_campaign_from_callback(build_campaign_partial)
+        return {"campaign_start_day": value}
+
+    #vax_effs = np.linspace(0,1.0,3) # 0.0, 0.5, 1.0
+    #builder.add_sweep_definition( update_campaign_efficacy, vax_effs )
+    start_days = np.linspace(1,3651,11) # 1, 366, etc.
+    builder.add_sweep_definition( update_campaign_start, start_days )
 
     # create experiment from builder
     experiment  = Experiment.from_builder(builder, task, name="Typhoid Hello World") 
@@ -109,6 +143,6 @@ def run_test():
 
 if __name__ == "__main__":
     import emod_typhoid.bootstrap as dtk
-    dtk.setup( manifest.model_dl_dir )
+    #dtk.setup( manifest.model_dl_dir )
     
     run_test()
