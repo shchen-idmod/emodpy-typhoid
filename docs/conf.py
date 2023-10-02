@@ -29,7 +29,7 @@ if sys.platform in ["linux", "darwin"]:
 else:
     subprocess.check_output(["make.bat", "generate-api"], cwd=os.path.dirname(os.path.abspath(__file__)))
 
-# Rename "emodpy-malaria" to "API reference"
+# Rename "emodpy-typhoid" to "API reference"
 filename = 'modules.rst' # This must match the Makefile
 with open(filename) as f: # Read existing file
     lines = f.readlines()
@@ -59,10 +59,27 @@ extensions = [
     'sphinx_copybutton',
     'sphinx.ext.intersphinx',
     'sphinxext.remoteliteralinclude',
-    'myst_parser',
-    'sphinx_search.extension'
+    'myst_parser', # source files written in MD or RST
+    'sphinx_search.extension', # search across entire IDM docs domain
+    'sphinx.ext.viewcode' # link to view source code
 ]
 
+myst_enable_extensions = [
+    "amsmath",
+    "attrs_inline",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "fieldlist",
+    "html_admonition",
+    "html_image",
+    "linkify",
+    "replacements",
+    "smartquotes",
+    "strikethrough",
+    "substitution",
+    "tasklist",
+]
 plantuml = 'plantweb'
 
 autodoc_default_options = {
@@ -208,15 +225,14 @@ html_favicon = "images/favicon.ico"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+
 html_static_path = ['_static']
 
-html_context = {
-    'css_files': [
-        '_static/theme_overrides.css',
-        '_static/copy_button.css'
-        ]
-}
-html_js_files = ['show_block_by_os.js']
+html_css_files = ['theme_overrides.css']
+
+html_js_files = ['show_block_by_os.js'] 
+
+
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the docs.
@@ -310,7 +326,7 @@ html_use_opensearch = 'www.idmod.org/docs/'
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'emodpy-malaria'
+htmlhelp_basename = 'emodpy-typhoid'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -336,7 +352,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'emodpy-malaria-docs.tex', u'emodpy-malaria',
+    (master_doc, 'emodpy-typhoid-docs.tex', u'emodpy-typhoid',
      u'Institute for Disease Modeling', 'manual'),
 ]
 
@@ -378,7 +394,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'emodpy-malaria-docs', u'emodpy-malaria',
+    (master_doc, 'emodpy-typhoid-docs', u'emodpy-typhoid',
      [author], 1)
 ]
 
@@ -392,8 +408,8 @@ man_show_urls = True
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'emodpy-malaria-docs', u'emodpy-malaria',
-     author, 'Institute for Disease Modeling', 'How to use emodpy for malaria simulations.',
+    (master_doc, 'emodpy-typhoid-docs', u'emodpy-typhoid',
+     author, 'Institute for Disease Modeling', 'How to use emodpy for typhoid simulations.',
      'Miscellaneous'),
 ]
 
@@ -420,6 +436,6 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'emod_api': ('https://docs.idmod.org/projects/emod-api/en/latest/', None),
                        'emodpy': ('https://docs.idmod.org/projects/emodpy/en/latest/', None),
                        'idmtools': ('https://docs.idmod.org/projects/idmtools/en/latest/', None),
-                       'emod-malaria': ('https://docs.idmod.org/projects/emod-malaria/en/latest/', None),
+                       'emod-typhoid': ('https://docs.idmod.org/projects/emod-typhoid/en/latest/', None),
                        'pycomps': ('https://docs.idmod.org/projects/pycomps/en/latest/', None)
                        }
