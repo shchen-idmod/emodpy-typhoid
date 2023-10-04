@@ -125,7 +125,7 @@ def new_routine_immunization(
             "Delay_Period_Max": child_age+7
             }
 
-    event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Triggers=["Births"], Demographic_Coverage=coverage, Intervention_List=[ iv ], Node_Ids=node_ids, Property_Restrictions=property_restrictions_list, Event_Name="9-Month 'Typhoid' Vax", Delay=delay )
+    event = common.triggered_campaign_delay_event( camp, start_day=start_day, trigger="Births", delay=delay, intervention=iv, ip_targeting=property_restrictions_list, coverage=coverage )
 
     return event
 
