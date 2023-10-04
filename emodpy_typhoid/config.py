@@ -8,5 +8,4 @@ def cleanup_for_2018_mode( config ):
     config.parameters.Infectious_Period_Distribution = "FIXED_DURATION" # hack
     config.parameters.Base_Incubation_Period = 1
     config.parameters.Base_Infectious_Period = 1
-    config.parameters["Listed_Events"] = []
 
