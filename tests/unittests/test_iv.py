@@ -114,6 +114,69 @@ class TestTyphoidInterventions(unittest.TestCase):
     #     camp_data = self.read_camp(self.case_name)
     #     self.parse_intervention(camp_data['Events'][0])
 
+    def test_new_routine_immunization(self):
+        vax_eff = 0.8
+        start_day = 4
+        child_age = 250
+        event = ty.new_routine_immunization(camp=self.camp, efficacy=vax_eff, start_day=start_day, child_age=child_age)
+        self.parse_intervention(event)
+        self.assertEqual(event['Start_Day'], float(start_day))
+        self.assertEqual(self.intervention_config['Trigger_Condition_List'], ['Births'])
+        actual_idv_config = self.intervention_config['Actual_IndividualIntervention_Config']
+        self.assertEqual(actual_idv_config['Intervention_Name'], 'DelayedIntervention')
+        self.assertEqual(actual_idv_config['Delay_Distribution'], 'UNIFORM_DURATION')
+        self.assertEqual(actual_idv_config['Delay_Period_Max'], child_age + 7)
+        self.assertEqual(actual_idv_config['Delay_Period_Mean'], 6)
+        self.assertEqual(actual_idv_config['Delay_Period_Min'], child_age - 7)
+        self.assertEqual(actual_idv_config['Delay_Period_Scale'], 16)
+        self.assertEqual(actual_idv_config['Delay_Period_Shape'], 20)
+        self.assertEqual(
+            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Waning_Config']['Initial_Effect'], vax_eff)
+        self.assertEqual(
+            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Waning_Config']['Decay_Time_Constant'],
+            6935.0)
+        self.assertEqual(
+            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Waning_Config']['class'],
+            'WaningEffectBoxExponential')
+        # TODo: need to change to AcquisitionBlocking
+        self.assertEqual(
+            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Vaccine_Type'], 'Generic')
+        self.assertEqual(
+            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Intervention_Name'], 'SimpleVaccine')
+        self.assertEqual(
+            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['class'], 'SimpleVaccine')
+
+    def test_camp_immunization(self):
+        vax_eff = 0.8
+        start_day = 10
+        decay_constant = 1234.0
+        coverage = 0.5
+        target_age_min = 0.5
+        target_age_max = 10
+        import emod_api.interventions.common as comm
+        tv_iv = ty.new_vax(camp=self.camp, efficacy=vax_eff, decay_constant=decay_constant)
+        event = comm.ScheduledCampaignEvent(camp=self.camp,
+                                                        Start_Day=start_day,
+                                                        Intervention_List=[tv_iv],
+                                                        Demographic_Coverage=coverage,
+                                                        Target_Age_Min=target_age_min,
+                                                        Target_Age_Max=target_age_max)
+        self.parse_intervention(event)
+        self.assertEqual(event['Start_Day'], float(start_day))
+        self.assertEqual(self.intervention_config['Intervention_Name'], 'SimpleVaccine')
+        # TODo: need to change to AcquisitionBlocking
+        self.assertEqual(self.intervention_config['Vaccine_Type'], 'Generic')
+        self.assertEqual(self.intervention_config['Waning_Config']['Decay_Time_Constant'], decay_constant)
+        self.assertEqual(self.intervention_config['Waning_Config']['Initial_Effect'], vax_eff)
+        self.assertEqual(self.intervention_config['Waning_Config']['Box_Duration'], 0)
+        self.assertEqual(self.intervention_config['Waning_Config']['class'], 'WaningEffectBoxExponential')
+        self.assertEqual(self.event_coordinator['Target_Age_Max'], target_age_max)
+        self.assertEqual(self.event_coordinator['Target_Age_Min'], target_age_min)
+        self.assertEqual(self.event_coordinator['Target_Demographic'], 'ExplicitAgeRanges')
+        self.assertEqual(self.event_coordinator['Target_Gender'], 'All')
+        self.assertEqual(self.event_coordinator['Node_Property_Restrictions'], [])
+        self.assertEqual(self.event_coordinator['Demographic_Coverage'], coverage)
+
 
 if __name__ == "__main__":
     unittest.main()
