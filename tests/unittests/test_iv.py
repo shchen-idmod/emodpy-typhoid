@@ -138,9 +138,8 @@ class TestTyphoidInterventions(unittest.TestCase):
         self.assertEqual(
             actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Waning_Config']['class'],
             'WaningEffectBoxExponential')
-        # TODo: need to change to AcquisitionBlocking
         self.assertEqual(
-            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Vaccine_Type'], 'Generic')
+            actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Vaccine_Type'], 'AcquisitionBlocking')
         self.assertEqual(
             actual_idv_config['Actual_IndividualIntervention_Configs'][0]['Intervention_Name'], 'SimpleVaccine')
         self.assertEqual(
@@ -163,9 +162,7 @@ class TestTyphoidInterventions(unittest.TestCase):
                                                         Target_Age_Max=target_age_max)
         self.parse_intervention(event)
         self.assertEqual(event['Start_Day'], float(start_day))
-        self.assertEqual(self.intervention_config['Intervention_Name'], 'SimpleVaccine')
-        # TODo: need to change to AcquisitionBlocking
-        self.assertEqual(self.intervention_config['Vaccine_Type'], 'Generic')
+        self.assertEqual(self.intervention_config['Vaccine_Type'], 'AcquisitionBlocking')
         self.assertEqual(self.intervention_config['Waning_Config']['Decay_Time_Constant'], decay_constant)
         self.assertEqual(self.intervention_config['Waning_Config']['Initial_Effect'], vax_eff)
         self.assertEqual(self.intervention_config['Waning_Config']['Box_Duration'], 0)
