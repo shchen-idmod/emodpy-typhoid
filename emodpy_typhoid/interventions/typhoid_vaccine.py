@@ -34,7 +34,7 @@ def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_c
      Args:
          camp (Camp): The camp to which the intervention is applied.
          efficacy (float, optional): The efficacy of the Typhoid vaccine. Default is 0.82.
-         mode (str, optional): The mode of the intervention. Default is "Acquisition".
+         mode (str, optional): The mode of the intervention. Default is "Acquisition" Can also be "Transmission" or "All".
          constant_period (float, optional): The constant period of the waning effect in days. Default is 0.
          decay_constant (float, optional): The decay time constant for the waning effect. Default is 6935.0.
 
@@ -110,15 +110,16 @@ def new_routine_immunization(
         co_event=None # expansion slot
     ):
     """
-    Create a new birth-triggered SimpleVaccine intervention based on specified parameters.
+    Create a new delayed, birth-triggered SimpleVaccine intervention based on specified parameters. Does not add to campaign.
 
     Args:
          camp (Camp): The camp to which the intervention is applied.
          efficacy (float, optional): The efficacy of the Typhoid vaccine. Default is 0.82.
-         mode (str, optional): The mode of the intervention. Default is "Acquisition".
+         mode (str, optional): The mode of the intervention. Default is "Shedding".
          constant_period (float, optional): The constant period of the waning effect in days. Default is 0.
          decay_constant (float, optional): The decay time constant for the waning effect. Default is 6935.0.
          start_day (int, optional): The day on which the intervention starts. Default is 1.
+         child_age (int, optional): The age of the person when they get the vaccine. Defaults to 9 months. Vaccines are actually distribute +/- 7 days.
          coverage (float, optional): Demographic coverage of the intervention. Default is 1.0.
          node_ids (list, optional): List of node IDs where the intervention is applied. Default is None.
          property_restrictions_list (list, optional): List of property restrictions for the intervention. Default is an empty list.
@@ -128,8 +129,9 @@ def new_routine_immunization(
          TriggeredCampaignEvent: An instance of a triggered campaign event with the TyphoidVaccine intervention.
     """
     iv = new_vax( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant )
+    age_min = max(0,child_age-7)
     delay = {
-            "Delay_Period_Min": child_age-7,
+            "Delay_Period_Min": age_min,
             "Delay_Period_Max": child_age+7
             }
 
