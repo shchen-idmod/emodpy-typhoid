@@ -49,8 +49,8 @@ def set_param_fn( config ):
     config.parameters.Inset_Chart_Reporting_Start_Year = 1900 
     config.parameters.Inset_Chart_Reporting_Stop_Year = 2050 
     config.parameters.Enable_Demographics_Reporting = 0 
-    #config.parameters.Report_Event_Recorder_Events = [ "VaccineDistributed" ]
-    #config.parameters["Custom_Events"] = [ "VaccineDistributed" ]
+    config.parameters.Report_Event_Recorder_Events = [ "VaccineDistributed" ]
+    config.parameters["Listed_Events"] = [ "VaccineDistributed" ] # old school
     #config.parameters.Typhoid_Immunity_Memory = 36500
     #config.parameters.Config_Name = "149_Typhoid"
 
@@ -104,10 +104,7 @@ def build_camp( start_day_offset=1, vax_eff = 0.82 ):
             start_day=year_to_days( CAMP_START_YEAR )+start_day_offset
         )
 
-    """
     notification_iv = comm.BroadcastEvent( camp, "VaccineDistributed" )
-    vax_plus_msg = comm.MultiInterventionDistributor( camp, [ tv_iv, notification_iv ] )
-    """
     #event = comm.triggered_campaign_event_with_optional_delay( camp, start_day=1, intervention=[tv_iv,notification_iv], triggers=["Births"], delay=delay_dict )
     camp.add( ria )
 
@@ -116,7 +113,7 @@ def build_camp( start_day_offset=1, vax_eff = 0.82 ):
         )
     one_time_campaign = comm.ScheduledCampaignEvent( camp,
                 Start_Day=year_to_days( CAMP_START_YEAR )+start_day_offset,
-                Intervention_List=[tv_iv],
+                Intervention_List=[tv_iv,notification_iv],
                 Demographic_Coverage=0.72,
                 Target_Age_Min=0.75,
                 Target_Age_Max=15
@@ -158,7 +155,6 @@ def run_test():
     task.config.parameters.Demographics_Filenames = [  "TestDemographics_pak_updated.json" ]
     task.config.parameters.Death_Rate_Dependence = "NONDISEASE_MORTALITY_BY_YEAR_AND_AGE_FOR_EACH_GENDER"
     task.config.parameters.Birth_Rate_Dependence = "INDIVIDUAL_PREGNANCIES_BY_AGE_AND_YEAR"
-
     #print("Adding asset dir...")
     #task.common_assets.add_directory(assets_directory=manifest.reporters, relative_path="reporter_plugins")
     task.common_assets.add_directory(assets_directory=manifest.assets_input_dir)
@@ -179,7 +175,7 @@ def run_test():
 
     vax_effs = np.linspace(0,1.0,3) # 0.0, 0.5, 1.0
     builder.add_sweep_definition( update_campaign_efficacy, vax_effs )
-    builder.add_sweep_definition( update_sim_random_seed, range(5) )
+    builder.add_sweep_definition( update_sim_random_seed, range(1) )
     #start_day_offsets = np.linspace(0,60,7) # 1, 366, etc.
     #builder.add_sweep_definition( update_campaign_start, start_day_offsets )
 
