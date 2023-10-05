@@ -175,10 +175,10 @@ def build_demog():
     import emodpy_typhoid.demographics.TyphoidDemographics as Demographics # OK to call into emod-api
 
     demog = Demographics.from_template_node( lat=0, lon=0, pop=10000, name=1, forced_id=1 )
-    #wb_births_df = pd.read_csv( manifest.world_bank_dataset )
-    #demog.SetEquilibriumVitalDynamicsFromWorldBank( wb_births_df=wb_births_df, country='Chile', year=BASE_YEAR )
+    # We're getting all our demographics from a static file overlay.
 
     """
+    # This doesn't work right now but still want to leave in example of what we want to be able to do soon.
     demog.AddAgeDependentTransmission( 
             Age_Bin_Edges_In_Years = [0, 5, 20, 60, -1],
             TransmissionMatrix = [
@@ -214,12 +214,8 @@ def run_test():
     task = EMODTask.from_default2(config_path="config.json", eradication_path=manifest.eradication_path, campaign_builder=build_camp, demog_builder=build_demog, schema_path=manifest.schema_file, param_custom_cb=set_param_fn, ep4_custom_cb=None)
     # normally we don't force-set parameters at this point
     task.config.parameters.Demographics_Filenames = [  "demographics.json", "TestDemographics_pak_updated.json" ]
-    #task.config.parameters.Demographics_Filenames = [  "TestDemographics_pak_updated.json" ]
     task.config.parameters.Death_Rate_Dependence = "NONDISEASE_MORTALITY_BY_YEAR_AND_AGE_FOR_EACH_GENDER"
     task.config.parameters.Birth_Rate_Dependence = "INDIVIDUAL_PREGNANCIES_BY_AGE_AND_YEAR"
-    #task.config.parameters.Enable_Heterogeneous_Intranode_Transmission = 1
-    #print("Adding asset dir...")
-    #task.common_assets.add_directory(assets_directory=manifest.reporters, relative_path="reporter_plugins")
     task.common_assets.add_directory(assets_directory=manifest.assets_input_dir)
 
     task.set_sif( manifest.sif )
