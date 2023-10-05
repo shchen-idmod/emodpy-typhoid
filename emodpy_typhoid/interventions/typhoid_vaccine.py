@@ -43,7 +43,15 @@ def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_c
      """
 
     intervention = s2c.get_class_with_defaults( "SimpleVaccine", camp.schema_path )
-    #intervention.Mode = mode
+    if mode == "Acquisition":
+        intervention.Vaccine_Type = "AcquisitionBlocking"
+    elif mode == "Transmission":
+        intervention.Vaccine_Type = "TransmissionBlocking"
+    elif mode == "All":
+        intervention.Vaccine_Type = "General"
+    else:
+        raise ValueError( f"mode {mode} not recognized. Options are: 'Acquisition', 'Transmission', or 'All'." )
+
     intervention.Waning_Config = s2c.get_class_with_defaults( "WaningEffectBoxExponential" )
     intervention.Waning_Config.Initial_Effect = efficacy
     intervention.Waning_Config.Box_Duration = constant_period
