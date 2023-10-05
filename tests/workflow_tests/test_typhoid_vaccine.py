@@ -31,12 +31,12 @@ def compare(a, b):
 
 
 def compare_infected_before_vax(self, a, b):
-    a_infected_before_vax = a.loc[a['Time Of Report (Year)'].astype(int) <= CAMP_START_YEAR]
+    a_infected_before_vax = a.loc[a['Time Of Report (Year)'].astype(int) < CAMP_START_YEAR]
     a_list = \
         a_infected_before_vax[['Time Of Report (Year)', 'Infected', "Age"]].groupby(
             ['Time Of Report (Year)', 'Age']).sum()[
             'Infected'].tolist()
-    b_infected_before_vax = b.loc[b['Time Of Report (Year)'].astype(int) <= CAMP_START_YEAR]
+    b_infected_before_vax = b.loc[b['Time Of Report (Year)'].astype(int) < CAMP_START_YEAR]
     b_list = \
         b_infected_before_vax[['Time Of Report (Year)', 'Infected', "Age"]].groupby(
             ['Time Of Report (Year)', 'Age']).sum()[
@@ -46,12 +46,12 @@ def compare_infected_before_vax(self, a, b):
 
 
 def compare_infected_after_vax(self, a, b):
-    a_infected_after_vax = a.loc[a['Time Of Report (Year)'].astype(int) > CAMP_START_YEAR]
+    a_infected_after_vax = a.loc[a['Time Of Report (Year)'].astype(int) >= CAMP_START_YEAR]
     a_list = \
         a_infected_after_vax[['Time Of Report (Year)', 'Infected', "Age"]].groupby(
             ['Time Of Report (Year)', 'Age']).sum()[
             'Infected'].tolist()
-    b_infected_after_vax = b.loc[b['Time Of Report (Year)'].astype(int) > CAMP_START_YEAR]
+    b_infected_after_vax = b.loc[b['Time Of Report (Year)'].astype(int) >= CAMP_START_YEAR]
     b_list = \
         b_infected_after_vax[['Time Of Report (Year)', 'Infected', "Age"]].groupby(
             ['Time Of Report (Year)', 'Age']).sum()[
@@ -59,8 +59,8 @@ def compare_infected_after_vax(self, a, b):
     self.assertTrue(sum(a_list) >= sum(b_list))
 
 def compare_infected_after_vax_age_15(self, a, b):
-    a_infected_after_vax = a.loc[a['Time Of Report (Year)'].astype(int) > CAMP_START_YEAR]
-    b_infected_after_vax = b.loc[b['Time Of Report (Year)'].astype(int) > CAMP_START_YEAR]
+    a_infected_after_vax = a.loc[a['Time Of Report (Year)'].astype(int) >= CAMP_START_YEAR]
+    b_infected_after_vax = b.loc[b['Time Of Report (Year)'].astype(int) >= CAMP_START_YEAR]
     # validate after vax starts, total infected number of age groups from 0-15 from a is always greater than in b's
     first_15_age_groups_infected_a = a_infected_after_vax[['Time Of Report (Year)', 'Infected', "Age"]].groupby(
     ['Time Of Report (Year)', 'Age']).sum().head(15).iloc[:, 0].tolist()
@@ -205,7 +205,7 @@ class TyphoidVaxTests(unittest.TestCase):
         experiment = Experiment.from_builder(builder, task, name=self.case_name)
         # The last step is to call run() on the ExperimentManager to run the simulations.
         experiment.run(wait_until_done=True, platform=self.platform)
-        #exp_id = '5e2c8522-d962-ee11-92fc-f0921c167864'
+        #exp_id = '31bc5349-1163-ee11-92fc-f0921c167864'
         #experiment = self.platform.get_item(exp_id, item_type=ItemType.EXPERIMENT)
         task.handle_experiment_completion(experiment)
         task.get_file_from_comps(experiment.uid, ["ReportTyphoidByAgeAndGender.csv"])
