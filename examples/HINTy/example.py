@@ -165,7 +165,7 @@ def build_camp( start_day_offset=1, vax_eff = 0.82 ):
 
         #for t in np.linspace( 10*365, SIMULATION_DURATION_IN_YEARS*365, 3 ):
 
-    migrate()
+    #migrate()
     return camp
 
 def build_demog():
