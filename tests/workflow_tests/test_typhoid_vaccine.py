@@ -123,7 +123,6 @@ class TyphoidVaxTests(unittest.TestCase):
 
     def get_emod_task(self, set_param_fn):
         numpy.random.seed(0)
-        self.print_params()
         task = EMODTask.from_default2(config_path="config.json", eradication_path=manifest.eradication_path,
                                       campaign_builder=None, demog_builder=None,
                                       schema_path=manifest.schema_file, param_custom_cb=set_param_fn,
