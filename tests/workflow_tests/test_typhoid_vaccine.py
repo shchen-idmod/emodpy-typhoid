@@ -9,13 +9,19 @@ import numpy
 import numpy as np
 import pandas as pd
 from emodpy.emod_task import EMODTask
+import emod_api.campaign as camp
+import emod_api.interventions.outbreak as ob
+import emodpy_typhoid.interventions.typhoid_vaccine as tv
+import emod_api.interventions.common as comm
 from idmtools.builders import SimulationBuilder
 from idmtools.core import ItemType
 from idmtools.core.platform_factory import Platform
 from idmtools.entities.experiment import Experiment
+import itertools
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import manifest
+
 
 BASE_YEAR = 2005
 SIMULATION_DURATION_IN_YEARS = 20
@@ -117,6 +123,11 @@ class TyphoidVaxTests(unittest.TestCase):
         simulation.task.create_campaign_from_callback(build_campaign_partial)
         return {"Demographic Coverage": value}
 
+    def update_campaign_decay(self, build_camp, simulation, value):
+        build_campaign_partial = partial(build_camp, decay_constant=value)
+        simulation.task.create_campaign_from_callback(build_campaign_partial)
+        return {"Decay_Time_Constant": value}
+
     def update_sim_random_seed(self, simulation, value):
         simulation.task.config.parameters.Run_Number = value
         return {"Run_Number": value}
@@ -132,17 +143,14 @@ class TyphoidVaxTests(unittest.TestCase):
         task.set_sif(manifest.sif)
         return task
 
-    def test_new_routine_immunization(self):
+    def test_new_routine_immunization_sweep_vax_effs(self):
         def build_camp(start_day_offset=1, vax_eff=0.82, coverage=1):
-            import emod_api.campaign as camp
-            import emod_api.interventions.outbreak as ob
             camp.set_schema(manifest.schema_file)
 
             for x in range(10):
                 event = ob.new_intervention(camp, timestep=1 + x, cases=1)
                 camp.add(event)
 
-            import emodpy_typhoid.interventions.typhoid_vaccine as tv
             ria = tv.new_routine_immunization(camp,
                                               efficacy=vax_eff,
                                               start_day=year_to_days(CAMP_START_YEAR) + start_day_offset,
@@ -155,7 +163,7 @@ class TyphoidVaxTests(unittest.TestCase):
         builder = SimulationBuilder()
         vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1 (total 3 sims)
         builder.add_sweep_definition(partial(self.update_campaign_efficacy, build_camp), vax_effs)
-        cov = np.linspace(0, 1.0, 3)
+        #cov = np.linspace(0, 1.0, 3)
         #builder.add_sweep_definition(partial(self.update_campaign_coverage, build_camp), cov)
         builder.add_sweep_definition(self.update_sim_random_seed, range(1))
 
@@ -217,7 +225,6 @@ class TyphoidVaxTests(unittest.TestCase):
             df.columns = df.columns.to_series().apply(lambda x: x.strip())
             df_list.append(df)
 
-        import itertools
         for a, b in itertools.combinations(df_list, 2):
             infected_by_age[i] = df[[df.columns.values[0], 'Infected', "Age"]].groupby('Age').sum()["Infected"].tolist()
             self.compare_infected_before_vax(a, b)
@@ -228,18 +235,14 @@ class TyphoidVaxTests(unittest.TestCase):
         # note, I did not compare every single sim since occasionally there maybe some outliers for comparison for sims in middle
         self.compare_infected_after_vax(df_list[0], df_list[len(df_list) - 1])
 
-    def test_campaign_immunization(self):
+    def test_campaign_immunization_sweep_vax_effs(self):
         def build_camp(start_day_offset=1, vax_eff=0.82, coverage=1):
-            import emod_api.campaign as camp
-            import emod_api.interventions.outbreak as ob
             camp.set_schema(manifest.schema_file)
 
             for x in range(10):
                 event = ob.new_intervention(camp, timestep=1 + x, cases=1)
                 camp.add(event)
 
-            import emodpy_typhoid.interventions.typhoid_vaccine as tv
-            import emod_api.interventions.common as comm
             tv_iv = tv.new_vax(camp,
                                efficacy=vax_eff
                                )
@@ -258,7 +261,7 @@ class TyphoidVaxTests(unittest.TestCase):
         builder = SimulationBuilder()
         vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1 (total 3 sims)
         builder.add_sweep_definition(partial(self.update_campaign_efficacy, build_camp), vax_effs)
-        cov = np.linspace(0, 1.0, 3)
+        #cov = np.linspace(0, 1.0, 3)
         #builder.add_sweep_definition(partial(self.update_campaign_coverage, build_camp), cov)
         builder.add_sweep_definition(self.update_sim_random_seed, range(1))
         experiment = Experiment.from_builder(builder, task, name=self.case_name)
@@ -280,7 +283,7 @@ class TyphoidVaxTests(unittest.TestCase):
                 for j in range(10):
                     self.assertEqual(
                         campaign_list[j]['Event_Coordinator_Config']['Intervention_Config']['class'], 'Outbreak')
-                # verify #11 event is DelayedIntervention with Brith trigger
+                # verify #11 event is DelayedIntervention with Birth trigger
                 camp_intv_config = campaign_list[10]['Event_Coordinator_Config']['Intervention_Config']
                 self.assertEqual(camp_intv_config['Intervention_Name'], 'SimpleVaccine')
                 self.assertEqual(camp_intv_config['Vaccine_Type'], 'AcquisitionBlocking')
@@ -301,25 +304,20 @@ class TyphoidVaxTests(unittest.TestCase):
             df.columns = df.columns.to_series().apply(lambda x: x.strip())
             df_list.append(df)
 
-        import itertools
         for a, b in itertools.combinations(df_list, 2):
             infected_by_age[i] = df[[df.columns.values[0], 'Infected', "Age"]].groupby('Age').sum()["Infected"].tolist()
             self.compare_infected_before_vax(a, b)
 
         self.compare_infected_after_vax_age_15(df_list[0], df_list[len(df_list) - 1])
 
-    def test_campaign_immunization_coverage(self):
+    def test_campaign_immunization_sweep_coverage(self):
         def build_camp(start_day_offset=1, vax_eff=0.82, coverage=1):
-            import emod_api.campaign as camp
-            import emod_api.interventions.outbreak as ob
             camp.set_schema(manifest.schema_file)
 
             for x in range(10):
                 event = ob.new_intervention(camp, timestep=1 + x, cases=1)
                 camp.add(event)
 
-            import emodpy_typhoid.interventions.typhoid_vaccine as tv
-            import emod_api.interventions.common as comm
             tv_iv = tv.new_vax(camp,
                                efficacy=vax_eff
                                )
@@ -366,3 +364,62 @@ class TyphoidVaxTests(unittest.TestCase):
             df.columns = df.columns.to_series().apply(lambda x: x.strip())
             df_list.append(df)
         self.compare_infected_after_vax(df_list[0], df_list[len(df_list) - 1])
+
+    def test_campaign_immunization_sweep_decay_time_constant(self):
+        def build_camp(start_day_offset=1, vax_eff=0.82, decay_constant=6935, coverage=1):
+            camp.set_schema(manifest.schema_file)
+
+            for x in range(10):
+                event = ob.new_intervention(camp, timestep=1 + x, cases=1)
+                camp.add(event)
+
+            tv_iv = tv.new_vax(camp,
+                               efficacy=vax_eff,
+                               decay_constant=decay_constant
+                               )
+            one_time_campaign = comm.ScheduledCampaignEvent(camp,
+                                                            Start_Day=year_to_days(CAMP_START_YEAR) + start_day_offset,
+                                                            Intervention_List=[tv_iv],
+                                                            Demographic_Coverage=coverage,
+                                                            Target_Age_Min=0.75,
+                                                            Target_Age_Max=15
+                                                            )
+            camp.add(one_time_campaign)
+
+            return camp
+
+        task = self.get_emod_task(self.set_param_fn)
+        builder = SimulationBuilder()
+        decay_constant = [1000, 2000, 3000]
+        builder.add_sweep_definition(partial(self.update_campaign_decay, build_camp), decay_constant)
+        #cov = np.linspace(0, 1.0, 3)
+        #builder.add_sweep_definition(partial(self.update_campaign_coverage, build_camp), cov)
+        builder.add_sweep_definition(self.update_sim_random_seed, range(1))
+        experiment = Experiment.from_builder(builder, task, name=self.case_name)
+        experiment.run(wait_until_done=True, platform=self.platform)
+        #exp_id = 'ca28fe4b-c367-ee11-92fc-f0921c167864'
+        #experiment = self.platform.get_item(exp_id, item_type=ItemType.EXPERIMENT)
+        task.handle_experiment_completion(experiment)
+        task.get_file_from_comps(experiment.uid, ["ReportTyphoidByAgeAndGender.csv", "campaign.json"])
+        reporteventrecorder_downloaded = list(
+            glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
+        campaign_downloaded = list(glob(os.path.join(experiment.id, "**/campaign.json"), recursive=True))
+        # ---------------------------------------------
+        # Test campaign.json
+        for i in range(len(campaign_downloaded)):
+            with open(campaign_downloaded[i], "r") as content:
+                campaign_list = json.loads(content.read())['Events']
+                self.assertEqual(len(campaign_list), 11)
+                camp_intv_config = campaign_list[10]['Event_Coordinator_Config']['Intervention_Config']
+                # verify coverage
+                self.assertEqual(camp_intv_config['Waning_Config']['Decay_Time_Constant'], decay_constant[i])
+        df_list = []
+        for i in range(len(reporteventrecorder_downloaded)):
+            # read ReportEventRecorder.csv from each sim
+            df = pd.read_csv(reporteventrecorder_downloaded[i])
+            df.columns = df.columns.to_series().apply(lambda x: x.strip())
+            df_list.append(df)
+        infected_by_age = pd.DataFrame()
+        for a, b in itertools.combinations(df_list, 2):
+            infected_by_age[i] = df[[df.columns.values[0], 'Infected', "Age"]].groupby('Age').sum()["Infected"].tolist()
+            self.compare_infected_before_vax(a, b)
