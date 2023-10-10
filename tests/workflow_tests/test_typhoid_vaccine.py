@@ -26,10 +26,6 @@ def year_to_days(year):
     return (year - BASE_YEAR) * 365
 
 
-def compare(a, b):
-    pass
-
-
 class TyphoidVaxTests(unittest.TestCase):
 
     def compare_infected_before_vax(self, a, b):
@@ -75,13 +71,10 @@ class TyphoidVaxTests(unittest.TestCase):
         dtk.setup(manifest.model_dl_dir)
 
     def setUp(self):
-        self.platform = Platform("SLURM2")
+        #self.platform = Platform("SLURM", priority="Highest", node_group="idm_48cores")
+        self.platform = Platform("SLURM2", priority="Normal")
         self.case_name = os.path.basename(__file__) + "--" + self._testMethodName
 
-    def print_params(self):
-        """
-        Just a useful convenience function for the user.
-        """
 
     def set_param_fn(self, config):
         config.parameters.Simulation_Type = "TYPHOID_SIM"
@@ -109,47 +102,30 @@ class TyphoidVaxTests(unittest.TestCase):
         config_utils.cleanup_for_2018_mode(config)
         return config
 
-    def get_builder(self):
-        builder = SimulationBuilder()
-        builder = self.sweep_campaign_efficacy(builder)
-        return builder
-
     def update_campaign_start(self, simulation, value):
         build_campaign_partial = partial(self.build_camp, start_day=value)
         simulation.task.create_campaign_from_callback(build_campaign_partial)
         return {"campaign_start_day": value}
 
-    def sweep_campaign_efficacy(self, build_camp):
-        def update_campaign_efficacy(simulation, value):
-            build_campaign_partial = partial(build_camp, vax_eff=value)
-            simulation.task.create_campaign_from_callback(build_campaign_partial)
-            return {"vax_efficacy": value}
+    def update_campaign_efficacy(self, build_camp, simulation, value):
+        build_campaign_partial = partial(build_camp, vax_eff=value)
+        simulation.task.create_campaign_from_callback(build_campaign_partial)
+        return {"vax_efficacy": value}
 
-        builder = SimulationBuilder()
-        vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1 (total 3 sims)
-        builder.add_sweep_definition(update_campaign_efficacy, vax_effs)
-        return builder
-
-    def sweep_update_campaign_start(self, build_camp):
-        def update_campaign_start(simulation, value):
-            build_campaign_partial = partial(build_camp, start_day=value)
-            simulation.task.create_campaign_from_callback(build_campaign_partial)
-            return {"campaign_start_day": value}
-
-        builder = SimulationBuilder()
-        start_days = np.linspace(1, 3651, 11)  # 1, 366, etc.
-        builder.add_sweep_definition(update_campaign_start, start_days)
-        return builder
+    def update_campaign_coverage(self, build_camp, simulation, value):
+        build_campaign_partial = partial(build_camp, coverage=value)
+        simulation.task.create_campaign_from_callback(build_campaign_partial)
+        return {"Demographic Coverage": value}
 
     def update_sim_random_seed(self, simulation, value):
         simulation.task.config.parameters.Run_Number = value
         return {"Run_Number": value}
 
-    def get_emod_task(self, build_camp, set_param_fn):
+    def get_emod_task(self, set_param_fn):
         numpy.random.seed(0)
         self.print_params()
         task = EMODTask.from_default2(config_path="config.json", eradication_path=manifest.eradication_path,
-                                      campaign_builder=build_camp, demog_builder=None,
+                                      campaign_builder=None, demog_builder=None,
                                       schema_path=manifest.schema_file, param_custom_cb=set_param_fn,
                                       ep4_custom_cb=None)
 
@@ -157,18 +133,8 @@ class TyphoidVaxTests(unittest.TestCase):
         task.set_sif(manifest.sif)
         return task
 
-    def run_experiment(self, build_camp, set_param_fn):
-        task = self.get_emod_task(build_camp, set_param_fn)
-        builder = self.sweep_campaign_efficacy(build_camp)
-        builder.add_sweep_definition(self.update_sim_random_seed, range(1))
-        experiment = Experiment.from_builder(builder, task, name=self.case_name)
-        experiment.run(wait_until_done=True, platform=self.platform)
-        #exp_id = 'dd431053-9364-ee11-92fc-f0921c167864'
-        #experiment = self.platform.get_item(exp_id, item_type=ItemType.EXPERIMENT)
-        return task, experiment
-
     def test_new_routine_immunization(self):
-        def build_camp(start_day_offset=1, vax_eff=0.82):
+        def build_camp(start_day_offset=1, vax_eff=0.82, coverage=1):
             import emod_api.campaign as camp
             import emod_api.interventions.outbreak as ob
             camp.set_schema(manifest.schema_file)
@@ -180,12 +146,22 @@ class TyphoidVaxTests(unittest.TestCase):
             import emodpy_typhoid.interventions.typhoid_vaccine as tv
             ria = tv.new_routine_immunization(camp,
                                               efficacy=vax_eff,
-                                              start_day=year_to_days(CAMP_START_YEAR) + start_day_offset
+                                              start_day=year_to_days(CAMP_START_YEAR) + start_day_offset,
+                                               coverage=coverage
                                               )
             camp.add(ria)
             return camp
 
-        task, experiment = self.run_experiment(build_camp, self.set_param_fn)
+        task = self.get_emod_task(self.set_param_fn)
+        builder = SimulationBuilder()
+        vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1 (total 3 sims)
+        builder.add_sweep_definition(partial(self.update_campaign_efficacy, build_camp), vax_effs)
+        cov = np.linspace(0, 1.0, 3)
+        #builder.add_sweep_definition(partial(self.update_campaign_coverage, build_camp), cov)
+        builder.add_sweep_definition(self.update_sim_random_seed, range(1))
+
+        experiment = Experiment.from_builder(builder, task, name=self.case_name)
+        experiment.run(wait_until_done=True, platform=self.platform)
         task.handle_experiment_completion(experiment)
         task.get_file_from_comps(experiment.uid, ["ReportTyphoidByAgeAndGender.csv", "campaign.json"])
         # Get downloaded local ReportEventRecorder.csv file path for all simulations
@@ -254,7 +230,7 @@ class TyphoidVaxTests(unittest.TestCase):
         self.compare_infected_after_vax(df_list[0], df_list[len(df_list) - 1])
 
     def test_campaign_immunization(self):
-        def build_camp(start_day_offset=1, vax_eff=0.82):
+        def build_camp(start_day_offset=1, vax_eff=0.82, coverage=1):
             import emod_api.campaign as camp
             import emod_api.interventions.outbreak as ob
             camp.set_schema(manifest.schema_file)
@@ -271,7 +247,7 @@ class TyphoidVaxTests(unittest.TestCase):
             one_time_campaign = comm.ScheduledCampaignEvent(camp,
                                                             Start_Day=year_to_days(CAMP_START_YEAR) + start_day_offset,
                                                             Intervention_List=[tv_iv],
-                                                            Demographic_Coverage=0.72,
+                                                            Demographic_Coverage=coverage,
                                                             Target_Age_Min=0.75,
                                                             Target_Age_Max=15
                                                             )
@@ -279,7 +255,16 @@ class TyphoidVaxTests(unittest.TestCase):
 
             return camp
 
-        task, experiment = self.run_experiment(build_camp, self.set_param_fn)
+        task = self.get_emod_task(self.set_param_fn)
+        builder = SimulationBuilder()
+        vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1 (total 3 sims)
+        builder.add_sweep_definition(partial(self.update_campaign_efficacy, build_camp), vax_effs)
+        cov = np.linspace(0, 1.0, 3)
+        #builder.add_sweep_definition(partial(self.update_campaign_coverage, build_camp), cov)
+        builder.add_sweep_definition(self.update_sim_random_seed, range(1))
+        experiment = Experiment.from_builder(builder, task, name=self.case_name)
+        experiment.run(wait_until_done=True, platform=self.platform)
+
         task.handle_experiment_completion(experiment)
         # Get downloaded local ReportEventRecorder.csv file path for all simulations
         task.get_file_from_comps(experiment.uid, ["ReportTyphoidByAgeAndGender.csv", "campaign.json"])
@@ -305,7 +290,7 @@ class TyphoidVaxTests(unittest.TestCase):
                 self.assertEqual(
                     campaign_list[10]['Event_Coordinator_Config']['Target_Age_Min'], 0.75)
                 self.assertEqual(
-                    campaign_list[10]['Event_Coordinator_Config']['Demographic_Coverage'], 0.72)
+                    campaign_list[10]['Event_Coordinator_Config']['Demographic_Coverage'], 1)
 
         # ---------------------------------------------
         # Test prevalence in ReportTyphoidByAgeAndGender.csv
@@ -323,3 +308,62 @@ class TyphoidVaxTests(unittest.TestCase):
             self.compare_infected_before_vax(a, b)
 
         self.compare_infected_after_vax_age_15(df_list[0], df_list[len(df_list) - 1])
+
+    def test_campaign_immunization_coverage(self):
+        def build_camp(start_day_offset=1, vax_eff=0.82, coverage=1):
+            import emod_api.campaign as camp
+            import emod_api.interventions.outbreak as ob
+            camp.set_schema(manifest.schema_file)
+
+            for x in range(10):
+                event = ob.new_intervention(camp, timestep=1 + x, cases=1)
+                camp.add(event)
+
+            import emodpy_typhoid.interventions.typhoid_vaccine as tv
+            import emod_api.interventions.common as comm
+            tv_iv = tv.new_vax(camp,
+                               efficacy=vax_eff
+                               )
+            one_time_campaign = comm.ScheduledCampaignEvent(camp,
+                                                            Start_Day=year_to_days(CAMP_START_YEAR) + start_day_offset,
+                                                            Intervention_List=[tv_iv],
+                                                            Demographic_Coverage=coverage,
+                                                            Target_Age_Min=0.75,
+                                                            Target_Age_Max=15
+                                                            )
+            camp.add(one_time_campaign)
+
+            return camp
+
+        task = self.get_emod_task(self.set_param_fn)
+        builder = SimulationBuilder()
+        #vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1 (total 3 sims)
+        #builder.add_sweep_definition(partial(self.update_campaign_efficacy, build_camp), vax_effs)
+        cov = np.linspace(0, 1.0, 3)
+        builder.add_sweep_definition(partial(self.update_campaign_coverage, build_camp), cov)
+        builder.add_sweep_definition(self.update_sim_random_seed, range(1))
+        experiment = Experiment.from_builder(builder, task, name=self.case_name)
+        experiment.run(wait_until_done=True, platform=self.platform)
+        #exp_id = '38848a13-be67-ee11-92fc-f0921c167864'
+        #experiment = self.platform.get_item(exp_id, item_type=ItemType.EXPERIMENT)
+        task.handle_experiment_completion(experiment)
+        task.get_file_from_comps(experiment.uid, ["ReportTyphoidByAgeAndGender.csv", "campaign.json"])
+        reporteventrecorder_downloaded = list(
+            glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
+        campaign_downloaded = list(glob(os.path.join(experiment.id, "**/campaign.json"), recursive=True))
+        # ---------------------------------------------
+        # Test campaign.json
+        for i in range(len(campaign_downloaded)):
+            with open(campaign_downloaded[i], "r") as content:
+                campaign_list = json.loads(content.read())['Events']
+                self.assertEqual(len(campaign_list), 11)
+                # verify coverage
+                self.assertEqual(
+                    campaign_list[10]['Event_Coordinator_Config']['Demographic_Coverage'], cov[i])
+        df_list = []
+        for i in range(len(reporteventrecorder_downloaded)):
+            # read ReportEventRecorder.csv from each sim
+            df = pd.read_csv(reporteventrecorder_downloaded[i])
+            df.columns = df.columns.to_series().apply(lambda x: x.strip())
+            df_list.append(df)
+        self.compare_infected_after_vax(df_list[0], df_list[len(df_list) - 1])
