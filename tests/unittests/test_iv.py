@@ -8,7 +8,7 @@ import emodpy_typhoid.interventions.typhoid_wash as tw
 import emodpy_typhoid.interventions.tcd as tcd
 import emodpy_typhoid.interventions.tcc as tcc
 import emod_api.campaign as camp
-
+import pytest
 
 def read_camp(filename):
     f = open(os.path.join(os.getcwd(), filename))

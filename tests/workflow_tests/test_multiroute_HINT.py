@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+import unittest
 from functools import partial
 from glob import glob
 
@@ -12,7 +13,7 @@ from idmtools.builders import SimulationBuilder
 from idmtools.core import ItemType
 from idmtools.core.platform_factory import Platform
 from idmtools.entities.experiment import Experiment
-
+import pytest
 import manifest
 
 manifest.n_sims = 1
@@ -653,6 +654,4 @@ class TestMultiplePropertyBetweenGroups(IntegrationTest):
 
 
 if __name__ == '__main__':
-    import unittest
-
     unittest.main()

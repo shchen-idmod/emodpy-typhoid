@@ -3,7 +3,7 @@ import unittest
 
 import numpy
 import pandas as pd
-
+import pytest
 
 import emodpy_typhoid.demographics.TyphoidDemographics as TyphoidDemographics
 
@@ -148,3 +148,5 @@ class DemographicTest(unittest.TestCase):
         self.assertListEqual(demog_df['node_id'].values.tolist(), [int(node.id) for node in demog.nodes])
 
 
+if __name__ == '__main__':
+    unittest.main()
