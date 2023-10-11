@@ -134,7 +134,7 @@ def build_camp(ip_restrictions=[]):
     return camp
 
 
-class TestMultiplePropertyBetweenGroups(IntegrationTest):
+class MultiRouteHINTTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         import emod_typhoid.bootstrap as dtk
