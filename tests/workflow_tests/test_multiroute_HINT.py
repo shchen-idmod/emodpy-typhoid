@@ -8,7 +8,6 @@ from glob import glob
 import numpy as np
 import pandas as pd
 from emodpy.emod_task import EMODTask
-from idm_test.dtk_test.integration.integration_test import IntegrationTest
 from idmtools.builders import SimulationBuilder
 from idmtools.core import ItemType
 from idmtools.core.platform_factory import Platform
