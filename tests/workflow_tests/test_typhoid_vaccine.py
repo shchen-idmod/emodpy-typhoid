@@ -174,6 +174,8 @@ class TyphoidVaxTests(unittest.TestCase):
         reporteventrecorder_downloaded = list(
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
         campaign_downloaded = list(glob(os.path.join(experiment.id, "**/campaign.json"), recursive=True))
+        reporteventrecorder_downloaded.sort()
+        campaign_downloaded.sort()
         # ---------------------------------------------
         # Test campaign.json
         for i in range(len(campaign_downloaded)):
@@ -272,6 +274,8 @@ class TyphoidVaxTests(unittest.TestCase):
         reporteventrecorder_downloaded = list(
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
         campaign_downloaded = list(glob(os.path.join(experiment.id, "**/campaign.json"), recursive=True))
+        reporteventrecorder_downloaded.sort()
+        campaign_downloaded.sort()
         # ---------------------------------------------
         # Test campaign.json
         for i in range(len(campaign_downloaded)):
@@ -347,6 +351,8 @@ class TyphoidVaxTests(unittest.TestCase):
         reporteventrecorder_downloaded = list(
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
         campaign_downloaded = list(glob(os.path.join(experiment.id, "**/campaign.json"), recursive=True))
+        reporteventrecorder_downloaded.sort()
+        campaign_downloaded.sort()
         # ---------------------------------------------
         # Test campaign.json
         for i in range(len(campaign_downloaded)):
@@ -396,13 +402,15 @@ class TyphoidVaxTests(unittest.TestCase):
         builder.add_sweep_definition(self.update_sim_random_seed, range(1))
         experiment = Experiment.from_builder(builder, task, name=self.case_name)
         experiment.run(wait_until_done=True, platform=self.platform)
-        # exp_id = 'ca28fe4b-c367-ee11-92fc-f0921c167864'
-        # experiment = self.platform.get_item(exp_id, item_type=ItemType.EXPERIMENT)
+        #exp_id = 'ca28fe4b-c367-ee11-92fc-f0921c167864'
+        #experiment = self.platform.get_item(exp_id, item_type=ItemType.EXPERIMENT)
         task.handle_experiment_completion(experiment)
         task.get_file_from_comps(experiment.uid, ["ReportTyphoidByAgeAndGender.csv", "campaign.json"])
         reporteventrecorder_downloaded = list(
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
         campaign_downloaded = list(glob(os.path.join(experiment.id, "**/campaign.json"), recursive=True))
+        reporteventrecorder_downloaded.sort()
+        campaign_downloaded.sort()
         # ---------------------------------------------
         # Test campaign.json
         for i in range(len(campaign_downloaded)):

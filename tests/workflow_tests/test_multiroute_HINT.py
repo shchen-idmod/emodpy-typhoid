@@ -215,6 +215,8 @@ class MultiRouteHINTTest(unittest.TestCase):
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
         propertyreport_downloaded = list(
             glob(os.path.join(experiment.id, "**/PropertyReportTyphoid.json"), recursive=True))
+        reporteventrecorder_downloaded.sort()
+        propertyreport_downloaded.sort()
         for i in range(len(reporteventrecorder_downloaded)):
             # read ReportEventRecorder.csv from each sim
             df = pd.read_csv(reporteventrecorder_downloaded[i])
@@ -292,8 +294,6 @@ class MultiRouteHINTTest(unittest.TestCase):
             self.assertTrue(sum(property_list['Channels']['Contagion: Environment/Region:C']['Data']) > 0)
             self.assertTrue(sum(property_list['Channels']['Contagion: Environment/Region:D']['Data']) > 0)
 
-
-
     # This test to test transmission within groups
     def test_multiple_route_hint_no_mix(self):
         def build_demog1():
@@ -356,6 +356,8 @@ class MultiRouteHINTTest(unittest.TestCase):
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
         propertyreport_downloaded = list(
             glob(os.path.join(experiment.id, "**/PropertyReportTyphoid.json"), recursive=True))
+        reporteventrecorder_downloaded.sort()
+        propertyreport_downloaded.sort()
         for i in range(len(reporteventrecorder_downloaded)):
             # read ReportEventRecorder.csv from each sim
             df = pd.read_csv(reporteventrecorder_downloaded[i])
@@ -480,7 +482,7 @@ class MultiRouteHINTTest(unittest.TestCase):
         # Get downloaded local ReportEventRecorder.csv file path for all simulations
         reporteventrecorder_downloaded = list(
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
-
+        reporteventrecorder_downloaded.sort()
         for i in range(len(reporteventrecorder_downloaded)):
             # read ReportEventRecorder.csv from each sim
             df = pd.read_csv(reporteventrecorder_downloaded[i])
@@ -593,6 +595,8 @@ class MultiRouteHINTTest(unittest.TestCase):
             glob(os.path.join(experiment.id, "**/ReportTyphoidByAgeAndGender.csv"), recursive=True))
         propertyreport_downloaded = list(
             glob(os.path.join(experiment.id, "**/PropertyReportTyphoid.json"), recursive=True))
+        reporteventrecorder_downloaded.sort()
+        propertyreport_downloaded.sort()
         for i in range(len(reporteventrecorder_downloaded)):
             # read ReportEventRecorder.csv from each sim
             df = pd.read_csv(reporteventrecorder_downloaded[i])
