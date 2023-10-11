@@ -8,13 +8,10 @@ import numpy as np
 import pandas as pd
 from emodpy.emod_task import EMODTask
 from idm_test.dtk_test.integration.integration_test import IntegrationTest
-# from idm_test.dtk_test.integration import bootstrap, manifest
-# from tests.test_utils import generate_multiple_outbreak_waves
 from idmtools.builders import SimulationBuilder
 from idmtools.core import ItemType
 from idmtools.core.platform_factory import Platform
 from idmtools.entities.experiment import Experiment
-from matplotlib import pyplot as plt
 
 import manifest
 
