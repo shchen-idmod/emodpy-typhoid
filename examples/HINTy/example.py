@@ -49,13 +49,14 @@ def set_param_fn( config ):
     config.parameters.Inset_Chart_Reporting_Start_Year = 1900 
     config.parameters.Inset_Chart_Reporting_Stop_Year = 2050 
     config.parameters.Enable_Demographics_Reporting = 0 
-    config.parameters.Report_Event_Recorder_Events = [ "VaccineDistributed" ]
+    config.parameters.Enable_Property_Output = 1 
+    config.parameters.Report_Event_Recorder_Events = [ "VaccineDistributed", "PropertyChange"]
     config.parameters["Listed_Events"] = [ "VaccineDistributed" ] # old school
     #config.parameters.Typhoid_Immunity_Memory = 36500
     #config.parameters.Config_Name = "149_Typhoid"
 
     config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 2010
-    config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2020
+    config.parameters.Report_Typhoid_ByAgeAndGender_Stop_Year = 2050
     config.parameters.Typhoid_3year_Susceptible_Fraction = 0
     config.parameters.Typhoid_6month_Susceptible_Fraction = 0
     config.parameters.Typhoid_6year_Susceptible_Fraction = 0
@@ -120,6 +121,51 @@ def build_camp( start_day_offset=1, vax_eff = 0.82 ):
         )
     camp.add( one_time_campaign )
 
+    def migrate():
+        """
+        Use PropertyValueChanger to move some fraction between Rural and Urban over time.
+        """
+
+        def two_step():
+            rural_to_urban_pvc = comm.PropertyValueChanger( camp,
+                Target_Property_Key="Region",
+                Target_Property_Value="Urban",
+                Maximum_Duration=30,
+                Revert=1,
+            )
+            #rural_to_urban_pvc = comm.PropertyValueChanger( camp, ... )
+            event = comm.ScheduledCampaignEvent( camp,
+                    Start_Day=t,
+                    Intervention_List=[rural_to_urban_pvc],
+                    Demographic_Coverage=0.1,
+                    Property_Restrictions = "Region:Rural"
+                    #,Target_Age_Min=0.75,
+                    #,Target_Age_Max=15
+                )
+            camp.add( event )
+            """
+            # 1% Urban->Rural
+            comm.change_individual_property( camp,
+                    target_property_name="Region",
+                    target_property_value="Rural",
+                    start_day=t, coverage=0.01,
+                    ip_restrictions="Region:Urban" )
+            """
+           
+        def one_step():
+            # 1% Rural->Urban
+            comm.change_individual_property( camp,
+                    target_property_name="Region",
+                    target_property_value="Urban",
+                    start_day=t, coverage=0.1, 
+                    ip_restrictions="Region:Rural" )
+
+        for t in np.linspace( 1, SIMULATION_DURATION_IN_YEARS*365, 20 ):
+            two_step()
+
+        #for t in np.linspace( 10*365, SIMULATION_DURATION_IN_YEARS*365, 3 ):
+
+    #migrate()
     return camp
 
 def build_demog():
@@ -129,9 +175,10 @@ def build_demog():
     import emodpy_typhoid.demographics.TyphoidDemographics as Demographics # OK to call into emod-api
 
     demog = Demographics.from_template_node( lat=0, lon=0, pop=10000, name=1, forced_id=1 )
-    #wb_births_df = pd.read_csv( manifest.world_bank_dataset )
-    #demog.SetEquilibriumVitalDynamicsFromWorldBank( wb_births_df=wb_births_df, country='Chile', year=BASE_YEAR )
+    # We're getting all our demographics from a static file overlay.
+
     """
+    # This doesn't work right now but still want to leave in example of what we want to be able to do soon.
     demog.AddAgeDependentTransmission( 
             Age_Bin_Edges_In_Years = [0, 5, 20, 60, -1],
             TransmissionMatrix = [
@@ -142,6 +189,20 @@ def build_demog():
             ]
     )
     """
+    # 80% rural, 20% urban.
+    demog.AddIndividualPropertyAndHINT( Property="Region",
+            Values = [ "Rural", "Urban" ],
+            InitialDistribution = [ 0.8, 0.2 ],
+            TransmissionMatrix = [
+                            [ 1, 0.1 ],
+                            [ 0.1, 1 ]
+                        ],
+            EnviroTransmissionMatrix = [
+                            [ 1, 0.1 ],
+                            [ 0.1, 1 ]
+                        ]
+        )
+
     return demog
 
 
@@ -151,12 +212,10 @@ def run_test():
     platform = Platform("SLURM", node_group="idm_48cores", priority="Highest") 
 
     task = EMODTask.from_default2(config_path="config.json", eradication_path=manifest.eradication_path, campaign_builder=build_camp, demog_builder=build_demog, schema_path=manifest.schema_file, param_custom_cb=set_param_fn, ep4_custom_cb=None)
-    #task.config.parameters.Demographics_Filenames = [  "demographics.json", "TestDemographics_pak_updated.json" ]
-    task.config.parameters.Demographics_Filenames = [  "TestDemographics_pak_updated.json" ]
+    # normally we don't force-set parameters at this point
+    task.config.parameters.Demographics_Filenames = [  "demographics.json", "TestDemographics_pak_updated.json" ]
     task.config.parameters.Death_Rate_Dependence = "NONDISEASE_MORTALITY_BY_YEAR_AND_AGE_FOR_EACH_GENDER"
     task.config.parameters.Birth_Rate_Dependence = "INDIVIDUAL_PREGNANCIES_BY_AGE_AND_YEAR"
-    #print("Adding asset dir...")
-    #task.common_assets.add_directory(assets_directory=manifest.reporters, relative_path="reporter_plugins")
     task.common_assets.add_directory(assets_directory=manifest.assets_input_dir)
 
     task.set_sif( manifest.sif )
@@ -175,7 +234,7 @@ def run_test():
 
     vax_effs = np.linspace(0,1.0,3) # 0.0, 0.5, 1.0
     builder.add_sweep_definition( update_campaign_efficacy, vax_effs )
-    builder.add_sweep_definition( update_sim_random_seed, range(1) )
+    builder.add_sweep_definition( update_sim_random_seed, range(5) ) # keep at 1 for smoketesting
     #start_day_offsets = np.linspace(0,60,7) # 1, 366, etc.
     #builder.add_sweep_definition( update_campaign_start, start_day_offsets )
 
@@ -198,6 +257,6 @@ def run_test():
 
 if __name__ == "__main__":
     import emod_typhoid.bootstrap as dtk
-    #dtk.setup( manifest.model_dl_dir )
+    dtk.setup( manifest.model_dl_dir )
     
     run_test()

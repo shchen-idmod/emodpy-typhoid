@@ -27,6 +27,37 @@ def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, d
     intervention.Changing_Effect.Decay_Time_Constant = decay_constant
     return intervention
 
+def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_constant=6935.0 ):
+    """
+     Create a new 'SimpleVaccine' intervention with specified parameters. If you use this function directly, you'll need to distribute the intervention with a function like ScheduledCampaignEvent or TriggeredCampaignEvent from emod_api.interventions.common.
+
+     Args:
+         camp (Camp): The camp to which the intervention is applied.
+         efficacy (float, optional): The efficacy of the Typhoid vaccine. Default is 0.82.
+         mode (str, optional): The mode of the intervention. Default is "Acquisition" Can also be "Transmission" or "All".
+         constant_period (float, optional): The constant period of the waning effect in days. Default is 0.
+         decay_constant (float, optional): The decay time constant for the waning effect. Default is 6935.0.
+
+     Returns:
+         SimpleVaccine: A fully configured instance of the SimpleVaccine intervention with the specified parameters.
+     """
+
+    intervention = s2c.get_class_with_defaults( "SimpleVaccine", camp.schema_path )
+    if mode == "Acquisition":
+        intervention.Vaccine_Type = "AcquisitionBlocking"
+    elif mode == "Transmission":
+        intervention.Vaccine_Type = "TransmissionBlocking"
+    elif mode == "All":
+        intervention.Vaccine_Type = "General"
+    else:
+        raise ValueError( f"mode {mode} not recognized. Options are: 'Acquisition', 'Transmission', or 'All'." )
+
+    intervention.Waning_Config = s2c.get_class_with_defaults( "WaningEffectBoxExponential" )
+    intervention.Waning_Config.Initial_Effect = efficacy
+    intervention.Waning_Config.Box_Duration = constant_period
+    intervention.Waning_Config.Decay_Time_Constant = decay_constant
+    return intervention
+
 def new_triggered_intervention( 
         camp, 
         efficacy=0.82,
@@ -62,6 +93,49 @@ def new_triggered_intervention(
     iv = new_intervention( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant )
 
     event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Triggers=triggers, Demographic_Coverage=coverage, Intervention_List=[ iv ], Node_Ids=node_ids, Property_Restrictions=property_restrictions_list, Event_Name="Triggered Typhoid Vax" )
+
+    return event
+
+def new_routine_immunization( 
+        camp, 
+        efficacy=0.82,
+        mode="Acquisition",
+        constant_period=0,
+        decay_constant=6935.0,
+        start_day=1, 
+        child_age=9*30,
+        coverage=1.0, 
+        node_ids=None,
+        property_restrictions_list=[],
+        co_event=None # expansion slot
+    ):
+    """
+    Create a new delayed, birth-triggered SimpleVaccine intervention based on specified parameters. Does not add to campaign.
+
+    Args:
+         camp (Camp): The camp to which the intervention is applied.
+         efficacy (float, optional): The efficacy of the Typhoid vaccine. Default is 0.82.
+         mode (str, optional): The mode of the intervention. Default is "Shedding".
+         constant_period (float, optional): The constant period of the waning effect in days. Default is 0.
+         decay_constant (float, optional): The decay time constant for the waning effect. Default is 6935.0.
+         start_day (int, optional): The day on which the intervention starts. Default is 1.
+         child_age (int, optional): The age of the person when they get the vaccine. Defaults to 9 months. Vaccines are actually distribute +/- 7 days.
+         coverage (float, optional): Demographic coverage of the intervention. Default is 1.0.
+         node_ids (list, optional): List of node IDs where the intervention is applied. Default is None.
+         property_restrictions_list (list, optional): List of property restrictions for the intervention. Default is an empty list.
+         co_event (None, optional): Expansion slot for future use.
+
+     Returns:
+         TriggeredCampaignEvent: An instance of a triggered campaign event with the TyphoidVaccine intervention.
+    """
+    iv = new_vax( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant )
+    age_min = max(0,child_age-7)
+    delay = {
+            "Delay_Period_Min": age_min,
+            "Delay_Period_Max": child_age+7
+            }
+
+    event = common.triggered_campaign_delay_event( camp, start_day=start_day, trigger="Births", delay=delay, intervention=iv, ip_targeting=property_restrictions_list, coverage=coverage )
 
     return event
 
