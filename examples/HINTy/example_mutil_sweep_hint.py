@@ -210,11 +210,11 @@ def run_test():
     vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1.0
     decay = [2000, 3000]
     cov = np.linspace(start=0.5, stop=1.0, num=6)
-    sweep_lit = []
+    sweep_list = []
     combinations = list(itertools.product(start_day_offset, vax_effs, cov, decay))
     for c in combinations:
-        sweep_lit.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage': c[2], 'decay_constant': c[3]})
-    builders = get_sweep_builders(sweep_lit)
+        sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage': c[2], 'decay_constant': c[3]})
+    builders = get_sweep_builders(sweep_list)
     # create TemplatedSimulations from task and builders
     ts = TemplatedSimulations(base_task=task, builders=builders)
     # create experiment from TemplatedSimulations
