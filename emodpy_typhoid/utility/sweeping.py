@@ -54,13 +54,13 @@ def sweep_functions(simulation: Simulation, func_list: List) -> Dict[str, Any]:
 
 class ItvFn:
     """
-    Sweeping utility: works for sweeping on interventions.
-    Requirements:
-     - func is a method that takes campaign as first parameter
-     - func return a dict
+        Sweeping utility: works for sweeping on interventions.
+        Requirements:
+        - func is a method that takes campaign as first parameter
+        - func return a dict
 
-    Returns:
-        dict
+        Returns:
+            dict
     """
 
     def __init__(self, func, *args, **kwargs):
@@ -102,13 +102,13 @@ class ItvFn:
 
 class CfgFn:
     """
-    Sweeping utility: works for sweeping on config parameters.
-    Requirements:
-     - func is a method that takes config as first parameter
-     - func return a dict
+        Sweeping utility: works for sweeping on config parameters.
+        Requirements:
+        - func is a method that takes config as first parameter
+        - func return a dict
 
-    Returns:
-        dict
+        Returns:
+            dict
     """
 
     def __init__(self, func, *args, **kwargs):
@@ -130,13 +130,13 @@ class CfgFn:
 
 class SwpFn:
     """
-    Sweeping utility: works for sweeping on report, demographics, migrations and climate, etc.
-    Requirements:
-     - func is a method that takes task as first parameter
-     - func return a dict
+        Sweeping utility: works for sweeping on report, demographics, migrations and climate, etc.
+        Requirements:
+        - func is a method that takes task as first parameter
+        - func return a dict
 
-    Returns:
-        dict
+        Returns:
+            dict
     """
 
     def __init__(self, func, *args, **kwargs):
