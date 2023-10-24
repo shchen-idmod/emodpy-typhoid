@@ -193,7 +193,7 @@ def get_sweep_builders(sweep_list):
     return [builder]
 
 
-def run_test():
+def run_test( sweep_choice="All" ):
     # Create a platform
     # Show how to dynamically set priority and node_group
     #platform = Platform("SLURM", node_group="idm_48cores", priority="Highest")
@@ -208,27 +208,58 @@ def run_test():
     task.config.parameters.Birth_Rate_Dependence = "INDIVIDUAL_PREGNANCIES_BY_AGE_AND_YEAR"
     task.common_assets.add_directory(assets_directory=manifest.assets_input_dir)
     task.set_sif(manifest.sif)
+
     # Create simulation sweep with builder
-    start_day_offset = [1]
-    #vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1.0
-    vax_effs = np.linspace(0.1, 1.0, 10)  # 0.0, 0.5, 1.0
-    #decay = [2000, 3000]
-    decay = [3000]
-    #cov = np.linspace(start=0.0, stop=1.0, num=2)
-    cov = [1]
-    sweep_list = []
-    combinations = list(itertools.product(start_day_offset, vax_effs, cov, decay))
-    for c in combinations:
-        sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage': c[2], 'decay_constant': c[3]})
+    def get_sweep_list_from_values(start_day_offset, vax_effs, cov, decay):
+        sweep_list = []
+        combinations = list(itertools.product(start_day_offset, vax_effs, cov, decay))
+        for c in combinations:
+            sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage': c[2], 'decay_constant': c[3]})
+        return sweep_list
+
+    def get_sweep_list_full():
+        start_day_offset = [1]
+        vax_effs = np.linspace(0.1, 1.0, 10)  # 0.0, 0.5, 1.0
+        decay = [1, 365, 3650, 365000]
+        cov = np.linspace(start=0.0, stop=1.0, num=5)
+        return get_sweep_list_from_values(start_day_offset, vax_effs, cov, decay)
+
+    def get_sweep_list_efficacy():
+        start_day_offset = [1]
+        vax_effs = np.linspace(0.1, 1.0, 10)  # 0.0, 0.5, 1.0
+        decay = [3000]
+        cov = [1]
+        return get_sweep_list_from_values(start_day_offset, vax_effs, cov, decay)
+
+    def get_sweep_list_coverage():
+        start_day_offset = [1]
+        vax_effs = [1]
+        decay = [3000]
+        cov = np.linspace(start=0.0, stop=1.0, num=5)
+        return get_sweep_list_from_values(start_day_offset, vax_effs, cov, decay)
+
+    def get_sweep_list_from_csv():
+        # This is wrong. Just load rows. Code is recreating. But have to stop work for now.
+        import pandas as pd
+        df = pd.load_csv( manifest.sweep_config )
+        raise NotImplemented( "get_sweep_list_from_csv" )
+
+    sweep_selections = {
+            "All": get_sweep_list_full,
+            "Efficacy": get_sweep_list_efficacy,
+            "Coverage": get_sweep_list_coverage
+            }
+
+    if sweep_choice not in sweep_selections.keys():
+        raise ValueError( f"{sweep_choice} not found in {sweep_selections.keys()}." )
+    sweep_list = sweep_selections[ sweep_choice ]()
+    #sweep_list = get_sweep_list_from_csv()
     builders = get_sweep_builders(sweep_list)
     # create TemplatedSimulations from task and builders
     ts = TemplatedSimulations(base_task=task, builders=builders)
     # create experiment from TemplatedSimulations
-    experiment = Experiment.from_template(ts, name="test_hint")
-    # The last step is to call run() on the ExperimentManager to run the simulations.
+    experiment = Experiment.from_template(ts, name=f"{sweep_choice} Sweep")
     experiment.run(wait_until_done=True, platform=platform)
-    # exp_id = '87d7d4eb-3f6a-ee11-92fc-f0921c167864'
-    # experiment = platform.get_item(exp_id, item_type=ItemType.EXPERIMENT)
     task.handle_experiment_completion(experiment)
 
     # download and plot some stuff.
@@ -246,4 +277,5 @@ if __name__ == "__main__":
 
     dtk.setup(manifest.model_dl_dir)
 
-    run_test()
+    import sys
+    run_test( sys.argv[1] if len(sys.argv)>1 else "Efficacy" )
