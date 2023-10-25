@@ -26,14 +26,8 @@ SIMULATION_DURATION_IN_YEARS = 20
 CAMP_START_YEAR = 2015
 
 
-def update_sim_bic(simulation, value):
-    simulation.task.config.parameters.Base_Infectivity_Constant = value * 0.1
-    return {"Base_Infectivity": value}
-
-
 def year_to_days(year):
     return ((year - BASE_YEAR) * 365)
-
 
 def set_param_fn(config):
     config.parameters.Simulation_Type = "TYPHOID_SIM"
@@ -78,10 +72,6 @@ def set_param_fn(config):
 
 
 def build_camp():
-    """
-    Build a campaign input file for the DTK using emod_api.
-    Right now this function creates the file and returns the filename. If calling code just needs an asset that's fine.
-    """
     import emod_api.campaign as camp
 
     print(f"Telling emod-api to use {manifest.schema_file} as schema.")
@@ -107,34 +97,6 @@ def build_demog():
     demog = Demographics.from_template_node(lat=0, lon=0, pop=10000, name=1, forced_id=1)
     # We're getting all our demographics from a static file overlay.
 
-    """
-    # This doesn't work right now but still want to leave in example of what we want to be able to do soon.
-    demog.AddAgeDependentTransmission( 
-            Age_Bin_Edges_In_Years = [0, 5, 20, 60, -1],
-            TransmissionMatrix = [
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0]
-            ]
-    )
-    """
-    demog.AddIndividualPropertyAndHINT(Property="Region",
-                                       Values=["A", "B", "C", "D"],
-                                       InitialDistribution=[0.25, 0.25, 0.25, 0.25],
-                                       TransmissionMatrix=[
-                                           [0.0, 1.0, 2.0, 5.0],
-                                           [0.0, 0.0, 0.0, 0.0],
-                                           [0.0, 0.0, 0.0, 0.0],
-                                           [0.0, 0.0, 0.0, 0.0]
-                                       ],
-                                       EnviroTransmissionMatrix=[
-                                           [0.0, 1.0, 2.0, 5.0],
-                                           [0.0, 0.0, 0.0, 0.0],
-                                           [0.0, 0.0, 0.0, 0.0],
-                                           [0.0, 0.0, 0.0, 0.0]
-                                       ]
-                                       )
     return demog
 
 
@@ -142,17 +104,28 @@ def add_vax_intervention(campaign, values):
     import emodpy_typhoid.interventions.typhoid_vaccine as tv
     print(f"Telling emod-api to use {manifest.schema_file} as schema.")
     campaign.set_schema(manifest.schema_file)
+    ria_coverage = 1
+    camp_coverage = 1
+    if 'coverage' in values:
+        ria_coverage = values['coverage']
+        camp_coverage = values['coverage']
+    else:
+        if 'coverage_ria' in values:
+            ria_coverage = values['coverage_ria']
+        else:
+            camp_coverage = values['coverage_camp']
+
     ria = tv.new_routine_immunization(campaign,
                                       efficacy=values['efficacy'],
                                       constant_period=36500,
                                       decay_constant=values['decay_constant'],
                                       start_day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
-                                      coverage=values['coverage']
+                                      coverage=ria_coverage
                                       )
 
     notification_iv = comm.BroadcastEvent(campaign, "VaccineDistributed")
     campaign.add(ria)
-    #
+
     tv_iv = tv.new_vax(campaign,
                        efficacy=values['efficacy'],
                        decay_constant=values['decay_constant'],
@@ -161,13 +134,18 @@ def add_vax_intervention(campaign, values):
     one_time_campaign = comm.ScheduledCampaignEvent(campaign,
                                                     Start_Day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
                                                     Intervention_List=[tv_iv, notification_iv],
-                                                    Demographic_Coverage=values['coverage']
+                                                    Demographic_Coverage=camp_coverage
                                                     #Target_Age_Min=0.75,
                                                     #Target_Age_Max=15
                                                     )
     campaign.add(one_time_campaign)
-    return {"start_day": values['start_day_offset'], 'efficacy': values['efficacy'], 'coverage': values['coverage'],
-            'decay': values['decay_constant']}
+    return {
+        "start_day": values['start_day_offset'],
+        'efficacy': values['efficacy'],
+        'coverage_ria': ria_coverage,
+        'coverage_camp': camp_coverage,
+        'decay': values['decay_constant']
+    }
 
 
 def get_sweep_builders(sweep_list):
@@ -193,11 +171,11 @@ def get_sweep_builders(sweep_list):
     return [builder]
 
 
-def run_test( sweep_choice="All" ):
+def run( sweep_choice="All" ):
     # Create a platform
     # Show how to dynamically set priority and node_group
-    #platform = Platform("SLURM", node_group="idm_48cores", priority="Highest")
-    platform = Platform("SLURMStage", node_group="idm_48cores", priority="Highest")
+    platform = Platform("SLURM", node_group="idm_48cores", priority="Highest")
+    #platform = Platform("SLURMStage", node_group="idm_48cores", priority="Highest")
 
     task = EMODTask.from_default2(config_path="config.json", eradication_path=manifest.eradication_path,
                                   campaign_builder=build_camp, demog_builder=build_demog, schema_path=manifest.schema_file,
@@ -219,14 +197,14 @@ def run_test( sweep_choice="All" ):
 
     def get_sweep_list_full():
         start_day_offset = [1]
-        vax_effs = np.linspace(0.1, 1.0, 10)  # 0.0, 0.5, 1.0
+        vax_effs = np.linspace(0.1, 1.0, 10)
         decay = [1, 365, 3650, 365000]
         cov = np.linspace(start=0.0, stop=1.0, num=5)
         return get_sweep_list_from_values(start_day_offset, vax_effs, cov, decay)
 
     def get_sweep_list_efficacy():
         start_day_offset = [1]
-        vax_effs = np.linspace(0.1, 1.0, 10)  # 0.0, 0.5, 1.0
+        vax_effs = np.linspace(0.1, 1.0, 10)
         decay = [3000]
         cov = [1]
         return get_sweep_list_from_values(start_day_offset, vax_effs, cov, decay)
@@ -238,6 +216,28 @@ def run_test( sweep_choice="All" ):
         cov = np.linspace(start=0.0, stop=1.0, num=5)
         return get_sweep_list_from_values(start_day_offset, vax_effs, cov, decay)
 
+    def get_sweep_list_coverage_ria():
+        start_day_offset = [1]
+        vax_effs = [1]
+        decay = [3000]
+        cov = np.linspace(start=0.0, stop=1.0, num=5)
+        combinations = list(itertools.product(start_day_offset, vax_effs, cov, decay))
+        sweep_list = []
+        for c in combinations:
+            sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage_ria': c[2], 'decay_constant': c[3]})
+        return sweep_list
+
+    def get_sweep_list_coverage_camp():
+        start_day_offset = [1]
+        vax_effs = [1]
+        decay = [3000]
+        cov = np.linspace(start=0.0, stop=1.0, num=5)
+        combinations = list(itertools.product(start_day_offset, vax_effs, cov, decay))
+        sweep_list = []
+        for c in combinations:
+            sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage_camp': c[2], 'decay_constant': c[3]})
+        return sweep_list
+
     def get_sweep_list_from_csv():
         # This is wrong. Just load rows. Code is recreating. But have to stop work for now.
         import pandas as pd
@@ -247,7 +247,9 @@ def run_test( sweep_choice="All" ):
     sweep_selections = {
             "All": get_sweep_list_full,
             "Efficacy": get_sweep_list_efficacy,
-            "Coverage": get_sweep_list_coverage
+            "Coverage": get_sweep_list_coverage,
+            "Coverage_RIA": get_sweep_list_coverage_ria,
+            "Coverage_Camp": get_sweep_list_coverage_camp
             }
 
     if sweep_choice not in sweep_selections.keys():
@@ -265,12 +267,7 @@ def run_test( sweep_choice="All" ):
     # download and plot some stuff.
     EMODTask.get_file_from_comps(experiment.uid, ["InsetChart.json", "ReportTyphoidByAgeAndGender.csv"])
     task.cache_experiment_metadata_in_sql(experiment.uid)
-    import matplotlib
-    matplotlib.use("TkAgg")
-    import emod_api.channelreports.plot_icj_means as plotter
-    chan_data = plotter.collect(str(experiment.uid), "New Infections By Route (CONTACT)", tag="efficacy=SWEEP")
-    plotter.display(chan_data, False, "New Infections By Route (CONTACT)", str(experiment.uid))
-
+    return str(experiment.uid)
 
 if __name__ == "__main__":
     import emod_typhoid.bootstrap as dtk
@@ -278,4 +275,4 @@ if __name__ == "__main__":
     dtk.setup(manifest.model_dl_dir)
 
     import sys
-    run_test( sys.argv[1] if len(sys.argv)>1 else "Efficacy" )
+    run( sys.argv[1] if len(sys.argv)>1 else "Efficacy" )
