@@ -100,7 +100,7 @@ def build_demog():
     return demog
 
 
-def add_vax_intervention(campaign, values):
+def add_vax_intervention(campaign, values, min_age=0.75, max_age=15):
     import emodpy_typhoid.interventions.typhoid_vaccine as tv
     print(f"Telling emod-api to use {manifest.schema_file} as schema.")
     campaign.set_schema(manifest.schema_file)
@@ -134,9 +134,9 @@ def add_vax_intervention(campaign, values):
     one_time_campaign = comm.ScheduledCampaignEvent(campaign,
                                                     Start_Day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
                                                     Intervention_List=[tv_iv, notification_iv],
-                                                    Demographic_Coverage=camp_coverage
-                                                    #Target_Age_Min=0.75,
-                                                    #Target_Age_Max=15
+                                                    Demographic_Coverage=camp_coverage,
+                                                    Target_Age_Min=min_age,
+                                                    Target_Age_Max=max_age
                                                     )
     campaign.add(one_time_campaign)
     return {
@@ -148,7 +148,7 @@ def add_vax_intervention(campaign, values):
     }
 
 
-def get_sweep_builders(sweep_list):
+def get_sweep_builders(sweep_list, add_vax_fn=add_vax_intervention):
     """
     Build simulation builders.
     Args:
@@ -159,7 +159,7 @@ def get_sweep_builders(sweep_list):
     """
     builder = SimulationBuilder()
     funcs_list = [[
-        ItvFn(add_vax_intervention, ce),
+        ItvFn(add_vax_fn, ce),
         partial(set_param, param='Run_Number', value=x),
     ]
         for ce in sweep_list  # for sweep on sweep_list
@@ -256,7 +256,9 @@ def run( sweep_choice="All" ):
         raise ValueError( f"{sweep_choice} not found in {sweep_selections.keys()}." )
     sweep_list = sweep_selections[ sweep_choice ]()
     #sweep_list = get_sweep_list_from_csv()
-    builders = get_sweep_builders(sweep_list)
+    avi_full_coverage = partial( add_vax_intervention, min_age=0, max_age=125 )
+    #builders = get_sweep_builders(sweep_list)
+    builders = get_sweep_builders(sweep_list, add_vax_fn=avi_full_coverage)
     # create TemplatedSimulations from task and builders
     ts = TemplatedSimulations(base_task=task, builders=builders)
     # create experiment from TemplatedSimulations
