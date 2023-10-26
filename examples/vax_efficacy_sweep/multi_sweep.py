@@ -117,8 +117,9 @@ def add_vax_intervention(campaign, values, min_age=0.75, max_age=15):
 
     ria = tv.new_routine_immunization(campaign,
                                       efficacy=values['efficacy'],
-                                      constant_period=36500,
-                                      decay_constant=values['decay_constant'],
+                                      constant_period=0,
+                                      #decay_constant=values['decay_constant'],
+                                      expected_expiration=values['decay_constant'],
                                       start_day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
                                       coverage=ria_coverage
                                       )
@@ -128,8 +129,9 @@ def add_vax_intervention(campaign, values, min_age=0.75, max_age=15):
 
     tv_iv = tv.new_vax(campaign,
                        efficacy=values['efficacy'],
-                       decay_constant=values['decay_constant'],
-                       constant_period=36500
+                       #decay_constant=values['decay_constant'],
+                       expected_expiration=values['decay_constant'],
+                       constant_period=0
                        )
     one_time_campaign = comm.ScheduledCampaignEvent(campaign,
                                                     Start_Day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
@@ -238,6 +240,18 @@ def run( sweep_choice="All" ):
             sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage_camp': c[2], 'decay_constant': c[3]})
         return sweep_list
 
+    def get_sweep_list_duration():
+        start_day_offset = [1]
+        vax_effs = [1]
+        decays = [1,365,3650,36500]
+        covs = [1.0]
+
+        combinations = list(itertools.product(start_day_offset, vax_effs, covs, decays))
+        sweep_list = []
+        for c in combinations:
+            sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage': c[2], 'decay_constant': c[3]})
+        return sweep_list
+
     def get_sweep_list_from_csv():
         # This is wrong. Just load rows. Code is recreating. But have to stop work for now.
         import pandas as pd
@@ -249,7 +263,8 @@ def run( sweep_choice="All" ):
             "Efficacy": get_sweep_list_efficacy,
             "Coverage": get_sweep_list_coverage,
             "Coverage_RIA": get_sweep_list_coverage_ria,
-            "Coverage_Camp": get_sweep_list_coverage_camp
+            "Coverage_Camp": get_sweep_list_coverage_camp,
+            "Vax_Duration": get_sweep_list_duration
             }
 
     if sweep_choice not in sweep_selections.keys():
