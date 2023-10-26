@@ -88,7 +88,7 @@ class ItvFn:
                 ev_addhoc = set(adhoc_events.keys())
                 simulation.task.config.parameters.Custom_Individual_Events = list(ev_exist.union(ev_addhoc))
             else:
-                simulation.task.config.parameters.Report_Event_Recorder_Events = list(set(adhoc_events.keys()))
+                simulation.task.config.parameters.Report_Event_Recorder_Events.extend( list(set(adhoc_events.keys())) )
                 #pass
 
         # Make sure we cast numpy types into normal system types

@@ -21,6 +21,7 @@ import manifest
 
 from emodpy_typhoid.utility.sweeping import ItvFn, set_param, sweep_functions
 
+
 BASE_YEAR = 2005
 SIMULATION_DURATION_IN_YEARS = 20
 CAMP_START_YEAR = 2015
@@ -100,7 +101,7 @@ def build_demog():
     return demog
 
 
-def add_vax_intervention(campaign, values, min_age=0.75, max_age=15):
+def add_vax_intervention(campaign, values, min_age=0.75, max_age=15, binary_immunity=True):
     import emodpy_typhoid.interventions.typhoid_vaccine as tv
     print(f"Telling emod-api to use {manifest.schema_file} as schema.")
     campaign.set_schema(manifest.schema_file)
@@ -115,24 +116,32 @@ def add_vax_intervention(campaign, values, min_age=0.75, max_age=15):
         else:
             camp_coverage = values['coverage_camp']
 
-    ria = tv.new_routine_immunization(campaign,
+    if binary_immunity:
+        ria = tv.new_routine_immunization(campaign,
                                       efficacy=values['efficacy'],
                                       constant_period=0,
-                                      #decay_constant=values['decay_constant'],
                                       expected_expiration=values['decay_constant'],
                                       start_day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
-                                      coverage=ria_coverage
-                                      )
+                                      coverage=ria_coverage)
+        tv_iv = tv.new_vax(campaign,
+                       efficacy=values['efficacy'],
+                       expected_expiration=values['decay_constant'],
+                       constant_period=0)
+    else:
+        ria = tv.new_routine_immunization(campaign,
+                                      efficacy=values['efficacy'],
+                                      constant_period=0,
+                                      decay_constant=values['decay_constant'],
+                                      start_day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
+                                      coverage=ria_coverage)
+        tv_iv = tv.new_vax(campaign,
+                       efficacy=values['efficacy'],
+                       decay_constant=values['decay_constant'],
+                       constant_period=0)
 
     notification_iv = comm.BroadcastEvent(campaign, "VaccineDistributed")
     campaign.add(ria)
 
-    tv_iv = tv.new_vax(campaign,
-                       efficacy=values['efficacy'],
-                       #decay_constant=values['decay_constant'],
-                       expected_expiration=values['decay_constant'],
-                       constant_period=0
-                       )
     one_time_campaign = comm.ScheduledCampaignEvent(campaign,
                                                     Start_Day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
                                                     Intervention_List=[tv_iv, notification_iv],
@@ -173,12 +182,7 @@ def get_sweep_builders(sweep_list, add_vax_fn=add_vax_intervention):
     return [builder]
 
 
-def run( sweep_choice="All" ):
-    # Create a platform
-    # Show how to dynamically set priority and node_group
-    platform = Platform("SLURM", node_group="idm_48cores", priority="Highest")
-    #platform = Platform("SLURMStage", node_group="idm_48cores", priority="Highest")
-
+def run( sweep_choice="All", age_targeted=True, binary_immunity=True ):
     task = EMODTask.from_default2(config_path="config.json", eradication_path=manifest.eradication_path,
                                   campaign_builder=build_camp, demog_builder=build_demog, schema_path=manifest.schema_file,
                                   param_custom_cb=set_param_fn, ep4_custom_cb=None)
@@ -270,10 +274,19 @@ def run( sweep_choice="All" ):
     if sweep_choice not in sweep_selections.keys():
         raise ValueError( f"{sweep_choice} not found in {sweep_selections.keys()}." )
     sweep_list = sweep_selections[ sweep_choice ]()
-    #sweep_list = get_sweep_list_from_csv()
-    avi_full_coverage = partial( add_vax_intervention, min_age=0, max_age=125 )
-    #builders = get_sweep_builders(sweep_list)
-    builders = get_sweep_builders(sweep_list, add_vax_fn=avi_full_coverage)
+
+    if age_targeted:
+        avi_age_coverage = add_vax_intervention
+    else:
+        avi_age_coverage = partial( add_vax_intervention, min_age=0, max_age=125 )
+
+    if binary_immunity:
+        avi_decay = partial( avi_age_coverage, binary_immunity=True )
+    else:
+        avi_decay = partial( avi_age_coverage, binary_immunity=False )
+
+    builders = get_sweep_builders(sweep_list, add_vax_fn=avi_decay)
+
     # create TemplatedSimulations from task and builders
     ts = TemplatedSimulations(base_task=task, builders=builders)
     # create experiment from TemplatedSimulations
