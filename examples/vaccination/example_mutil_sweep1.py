@@ -23,7 +23,7 @@ from emodpy_typhoid.utility.sweeping import ItvFn, set_param, sweep_functions, C
 
 BASE_YEAR = 1990
 SIMULATION_DURATION_IN_YEARS = 50
-CAMP_START_YEAR = 2015
+CAMP_START_YEAR = 2020
 
 
 def update_sim_bic(simulation, value):
@@ -38,14 +38,14 @@ def year_to_days(year):
 def set_param_fn(config):
     config.parameters.Simulation_Type = "TYPHOID_SIM"
     config.parameters.Simulation_Duration = SIMULATION_DURATION_IN_YEARS * 365.0
-    config.parameters.Base_Individual_Sample_Rate = 0.2
+    config.parameters.Base_Individual_Sample_Rate = 1
 
     config.parameters.Base_Year = BASE_YEAR
     config.parameters.Inset_Chart_Reporting_Start_Year = 1990
     config.parameters.Inset_Chart_Reporting_Stop_Year = 2040
     config.parameters.Enable_Demographics_Reporting = 0
     # config.parameters.Enable_Property_Output = 1
-    config.parameters.Report_Event_Recorder_Events = ["VaccineDistributed", "PropertyChange"]
+    config.parameters.Report_Event_Recorder_Events = ["VaccineDistributed1", "NewInfection"]
     config.parameters["Listed_Events"] = ["VaccineDistributed"]  # old school
 
     config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 1990
@@ -154,7 +154,7 @@ def add_vax_intervention(campaign, values):
                                                     Target_Age_Max=15
                                                     )
     campaign.add(one_time_campaign)
-    return {"start_day": values['efficacy'], 'efficacy': values['efficacy'], 'coverage': values['coverage'],
+    return {"start_day": values['start_day'], 'efficacy': values['efficacy'], 'coverage': values['coverage'],
             'expected_expiration': values['expected_expiration']}
 
 def sweep_config_func(config, values):
@@ -204,10 +204,13 @@ def run_test():
     task.set_sif(manifest.sif)
     # Create simulation sweep with builder
     start_day_offset = [1]
-    vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1.0
-    decay_constant = [2000, 3000]
-    expected_expiration = [2000, 3000]
-    cov = np.linspace(start=0.5, stop=1.0, num=6)
+    #vax_effs = np.linspace(0, 1.0, 3)  # 0.0, 0.5, 1.0
+    vax_effs = [0.9]
+
+    #decay_constant = [2000, 3000]
+    expected_expiration = [2190, 6935]
+    #cov = np.linspace(start=0.5, stop=1.0, num=6)
+    cov = [0.5, 0.75, 1]
     sweep_list = []
     typhoid_acute_infectiousness = [2000, 3000]
     typhoid_exposure_lambda = [2,4]
@@ -217,7 +220,7 @@ def run_test():
     for c in combinations_config:
         sweep_config.append({'typhoid_acute_infectiousness': c[0], 'typhoid_exposure_lambda': c[1]})
 
-    combinations = list(itertools.product(start_day_offset, vax_effs, cov, decay_constant))
+    combinations = list(itertools.product(start_day_offset, vax_effs, cov, expected_expiration))
     for c in combinations:
         sweep_list.append({'start_day_offset': c[0], 'efficacy': c[1], 'coverage': c[2], 'expected_expiration': c[3]})
     builders = get_sweep_builders(sweep_list, sweep_config)
