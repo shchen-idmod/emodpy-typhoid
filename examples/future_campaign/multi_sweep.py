@@ -23,7 +23,7 @@ from emodpy_typhoid.utility.sweeping import ItvFn, set_param, sweep_functions
 
 
 BASE_YEAR = 2005
-SIMULATION_DURATION_IN_YEARS = 20
+SIMULATION_DURATION_IN_YEARS = 25
 CAMP_START_YEAR = 2015
 FWD_CAMP_START_YEAR = 2024.25
 
@@ -150,45 +150,22 @@ def add_vax_intervention(campaign, values, min_age=0.75, max_age=15, binary_immu
     import emodpy_typhoid.interventions.typhoid_vaccine as tv
     print(f"Telling emod-api to use {manifest.schema_file} as schema.")
     campaign.set_schema(manifest.schema_file)
-    ria_coverage = 1
-    camp_coverage = 1
-    if 'coverage' in values:
-        ria_coverage = values['coverage']
-        camp_coverage = values['coverage']
-    else:
-        if 'coverage_ria' in values:
-            ria_coverage = values['coverage_ria']
-        else:
-            camp_coverage = values['coverage_camp']
+    camp_coverage = values['coverage_camp']
 
     if binary_immunity:
-        ria = tv.new_routine_immunization(campaign,
-                                      efficacy=values['efficacy'],
-                                      constant_period=0,
-                                      expected_expiration=values['decay_constant'],
-                                      start_day=year_to_days(FWD_CAMP_START_YEAR) + values['start_day_offset'],
-                                      coverage=ria_coverage)
         tv_iv = tv.new_vax(campaign,
                        efficacy=values['efficacy'],
                        expected_expiration=values['decay_constant'],
                        constant_period=0)
     else:
-        ria = tv.new_routine_immunization(campaign,
-                                      efficacy=values['efficacy'],
-                                      constant_period=0,
-                                      decay_constant=values['decay_constant'],
-                                      start_day=year_to_days(FWD_CAMP_START_YEAR) + values['start_day_offset'],
-                                      coverage=ria_coverage)
         tv_iv = tv.new_vax(campaign,
                        efficacy=values['efficacy'],
                        decay_constant=values['decay_constant'],
                        constant_period=0)
 
     notification_iv = comm.BroadcastEvent(campaign, "VaccineDistributed")
-    campaign.add(ria)
-
     one_time_campaign = comm.ScheduledCampaignEvent(campaign,
-                                                    Start_Day=year_to_days(CAMP_START_YEAR) + values['start_day_offset'],
+                                                    Start_Day=year_to_days(FWD_CAMP_START_YEAR),
                                                     Intervention_List=[tv_iv, notification_iv],
                                                     Demographic_Coverage=camp_coverage,
                                                     Target_Age_Min=min_age,
@@ -198,7 +175,6 @@ def add_vax_intervention(campaign, values, min_age=0.75, max_age=15, binary_immu
     return {
         "start_day": values['start_day_offset'],
         'efficacy': values['efficacy'],
-        'coverage_ria': ria_coverage,
         'coverage_camp': camp_coverage,
         'decay': values['decay_constant']
     }
