@@ -45,7 +45,7 @@ def set_param_fn(config):
     config.parameters.Inset_Chart_Reporting_Stop_Year = 2040
     config.parameters.Enable_Demographics_Reporting = 0
     # config.parameters.Enable_Property_Output = 1
-    config.parameters.Report_Event_Recorder_Events = ["VaccineDistributed1", "NewInfection"]
+    config.parameters.Report_Event_Recorder_Events = ["VaccineDistributed"]
     config.parameters["Listed_Events"] = ["VaccineDistributed"]  # old school
 
     config.parameters.Report_Typhoid_ByAgeAndGender_Start_Year = 1990
@@ -154,7 +154,7 @@ def add_vax_intervention(campaign, values):
                                                     Target_Age_Max=15
                                                     )
     campaign.add(one_time_campaign)
-    return {"start_day": values['start_day'], 'efficacy': values['efficacy'], 'coverage': values['coverage'],
+    return {"start_day": values['start_day_offset'], 'efficacy': values['efficacy'], 'coverage': values['coverage'],
             'expected_expiration': values['expected_expiration']}
 
 def sweep_config_func(config, values):
@@ -212,8 +212,8 @@ def run_test():
     #cov = np.linspace(start=0.5, stop=1.0, num=6)
     cov = [0.5, 0.75, 1]
     sweep_list = []
-    typhoid_acute_infectiousness = [2000, 3000]
-    typhoid_exposure_lambda = [2,4]
+    typhoid_acute_infectiousness = [10000, 13000, 16000]
+    typhoid_exposure_lambda = [0,5,10]
     sweep_config = []
     combinations_config = list(itertools.product(typhoid_acute_infectiousness, typhoid_exposure_lambda))
 
