@@ -118,7 +118,7 @@ def new_routine_immunization(
         coverage=1.0, 
         node_ids=None,
         property_restrictions_list=[],
-        co_event=None # expansion slot
+        co_event="VaccineDistributed" # expansion slot
     ):
     """
     Create a new delayed, birth-triggered SimpleVaccine intervention based on specified parameters. Does not add to campaign.
@@ -141,13 +141,22 @@ def new_routine_immunization(
          TriggeredCampaignEvent: An instance of a triggered campaign event with the TyphoidVaccine intervention.
     """
     iv = new_vax( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration )
+    if co_event:
+        signal = common.BroadcastEvent( camp, co_event )
+        iv = [ iv, signal ]
+    else:
+        iv = [ iv ]
     age_min = max(0,child_age-7)
     delay = {
             "Delay_Period_Min": age_min,
             "Delay_Period_Max": child_age+7
             }
 
-    event = common.triggered_campaign_delay_event( camp, start_day=start_day, trigger="Births", delay=delay, intervention=iv, ip_targeting=property_restrictions_list, coverage=coverage )
+    #event = common.triggered_campaign_delay_event( camp, start_day=start_day, trigger="Births", delay=delay, intervention=iv, ip_targeting=property_restrictions_list, coverage=coverage )
+    delay_iv = common.DelayedIntervention( camp, Configs=iv, Delay_Dict = delay )
+
+    event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Event_Name="triggered_delayed_intervention", Triggers=[ "Births"], Intervention_List=[delay_iv], Property_Restrictions=property_restrictions_list, Demographic_Coverage=coverage )
+
 
     return event
 
