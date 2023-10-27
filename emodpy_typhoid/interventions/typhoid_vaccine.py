@@ -3,18 +3,22 @@ from emod_api.interventions import utils
 from emod_api.interventions import common
 import json
 
-def _get_waning( constant_period=0, decay_constant=0, expected_expiration=0 ):
-    Changing_Effect = None # for scope
-    if decay_constant>0:
-        Changing_Effect = s2c.get_class_with_defaults( "WaningEffectBoxExponential" )
+from emod_api.interventions.common import DelayedIntervention, TriggeredCampaignEvent
+
+
+def _get_waning(constant_period=0, decay_constant=0, expected_expiration=0):
+    Changing_Effect = None  # for scope
+    if decay_constant > 0:
+        Changing_Effect = s2c.get_class_with_defaults("WaningEffectBoxExponential")
         Changing_Effect.Box_Duration = constant_period
         Changing_Effect.Decay_Time_Constant = decay_constant
     else:
-        Changing_Effect = s2c.get_class_with_defaults( "WaningEffectRandomBox" )
-        Changing_Effect.Expected_Discard_Time = expected_expiration 
-    return Changing_Effect 
+        Changing_Effect = s2c.get_class_with_defaults("WaningEffectRandomBox")
+        Changing_Effect.Expected_Discard_Time = expected_expiration
+    return Changing_Effect
 
-def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, decay_constant=0, expected_expiration=0 ):
+
+def new_intervention(camp, efficacy=0.82, mode="Shedding", constant_period=0, decay_constant=0, expected_expiration=0):
     """
      Create a new TyphoidVaccine intervention with specified parameters. If you use this function directly, you'll need to distribute the intervention with a function like ScheduledCampaignEvent or TriggeredCampaignEvent from emod_api.interventions.common.
 
@@ -31,14 +35,16 @@ def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, d
          TyphoidVaccine: A fully configured instance of the TyphoidVaccine intervention with the specified parameters.
      """
 
-    intervention = s2c.get_class_with_defaults( "TyphoidVaccine", camp.schema_path )
+    intervention = s2c.get_class_with_defaults("TyphoidVaccine", camp.schema_path)
     intervention.Effect = efficacy
     intervention.Mode = mode
-    intervention.Changing_Effect = _get_waning( constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration ) 
+    intervention.Changing_Effect = _get_waning(constant_period=constant_period, decay_constant=decay_constant,
+                                               expected_expiration=expected_expiration)
     intervention.Changing_Effect.Initial_Effect = efficacy
     return intervention
 
-def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_constant=0, expected_expiration=0 ):
+
+def new_vax(camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_constant=0, expected_expiration=0):
     """
      Create a new 'SimpleVaccine' intervention with specified parameters. If you use this function directly, you'll need to distribute the intervention with a function like ScheduledCampaignEvent or TriggeredCampaignEvent from emod_api.interventions.common.
 
@@ -54,7 +60,7 @@ def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_c
          SimpleVaccine: A fully configured instance of the SimpleVaccine intervention with the specified parameters.
      """
 
-    intervention = s2c.get_class_with_defaults( "SimpleVaccine", camp.schema_path )
+    intervention = s2c.get_class_with_defaults("SimpleVaccine", camp.schema_path)
     if mode == "Acquisition":
         intervention.Vaccine_Type = "AcquisitionBlocking"
     elif mode == "Transmission":
@@ -62,25 +68,27 @@ def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_c
     elif mode == "All":
         intervention.Vaccine_Type = "General"
     else:
-        raise ValueError( f"mode {mode} not recognized. Options are: 'Acquisition', 'Transmission', or 'All'." )
+        raise ValueError(f"mode {mode} not recognized. Options are: 'Acquisition', 'Transmission', or 'All'.")
 
-    intervention.Waning_Config = _get_waning( constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration ) 
+    intervention.Waning_Config = _get_waning(constant_period=constant_period, decay_constant=decay_constant,
+                                             expected_expiration=expected_expiration)
     intervention.Waning_Config.Initial_Effect = efficacy
     return intervention
 
-def new_triggered_intervention( 
-        camp, 
+
+def new_triggered_intervention(
+        camp,
         efficacy=0.82,
         mode="Shedding",
         constant_period=0,
         decay_constant=6935.0,
-        start_day=1, 
-        triggers=[ "Births" ],
-        coverage=1.0, 
+        start_day=1,
+        triggers=["Births"],
+        coverage=1.0,
         node_ids=None,
         property_restrictions_list=[],
-        co_event=None # expansion slot
-    ):
+        co_event=None  # expansion slot
+):
     """
     Create a new triggered TyphoidVaccine intervention based on specified parameters.
 
@@ -100,26 +108,32 @@ def new_triggered_intervention(
      Returns:
          TriggeredCampaignEvent: An instance of a triggered campaign event with the TyphoidVaccine intervention.
     """
-    iv = new_intervention( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant )
+    iv = new_intervention(camp, efficacy=efficacy, mode=mode, constant_period=constant_period,
+                          decay_constant=decay_constant)
 
-    event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Triggers=triggers, Demographic_Coverage=coverage, Intervention_List=[ iv ], Node_Ids=node_ids, Property_Restrictions=property_restrictions_list, Event_Name="Triggered Typhoid Vax" )
+    event = common.TriggeredCampaignEvent(camp, Start_Day=start_day, Triggers=triggers, Demographic_Coverage=coverage,
+                                          Intervention_List=[iv], Node_Ids=node_ids,
+                                          Property_Restrictions=property_restrictions_list,
+                                          Event_Name="Triggered Typhoid Vax")
 
     return event
 
-def new_routine_immunization( 
-        camp, 
+
+def new_routine_immunization(
+        camp,
         efficacy=0.82,
         mode="Acquisition",
         constant_period=0,
         decay_constant=0,
         expected_expiration=0,
-        start_day=1, 
-        child_age=9*30,
-        coverage=1.0, 
+        start_day=1,
+        child_age=9 * 30,
+        coverage=1.0,
         node_ids=None,
         property_restrictions_list=[],
         co_event="VaccineDistributed" # expansion slot
     ):
+
     """
     Create a new delayed, birth-triggered SimpleVaccine intervention based on specified parameters. Does not add to campaign.
 
@@ -140,38 +154,55 @@ def new_routine_immunization(
      Returns:
          TriggeredCampaignEvent: An instance of a triggered campaign event with the TyphoidVaccine intervention.
     """
-    iv = new_vax( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration )
+    # iv = new_vax( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration )
+    # if co_event:
+    #     signal = common.BroadcastEvent( camp, co_event )
+    #     iv = [ iv, signal ]
+    # else:
+    #     iv = [ iv ]
+    # age_min = max(0,child_age-7)
+    # delay = {
+    #         "Delay_Period_Min": age_min,
+    #         "Delay_Period_Max": child_age+7
+    #         }
+    #
+    #delay_iv = common.DelayedIntervention( camp, Configs=iv, Delay_Dict = delay )
+    #
+    # event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Event_Name="triggered_delayed_intervention", Triggers=[ "Births"], Intervention_List=[delay_iv], Property_Restrictions=property_restrictions_list, Demographic_Coverage=coverage )
+
+
+    iv = new_vax(camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant,
+                 expected_expiration=expected_expiration)
+
+
     if co_event:
-        signal = common.BroadcastEvent( camp, co_event )
-        iv = [ iv, signal ]
+        signal = common.BroadcastEvent(camp, co_event)
+        iv = [iv, signal]
     else:
-        iv = [ iv ]
-    age_min = max(0,child_age-7)
-    delay = {
-            "Delay_Period_Min": age_min,
-            "Delay_Period_Max": child_age+7
-            }
-
-    #event = common.triggered_campaign_delay_event( camp, start_day=start_day, trigger="Births", delay=delay, intervention=iv, ip_targeting=property_restrictions_list, coverage=coverage )
-    delay_iv = common.DelayedIntervention( camp, Configs=iv, Delay_Dict = delay )
-
-    event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Event_Name="triggered_delayed_intervention", Triggers=[ "Births"], Intervention_List=[delay_iv], Property_Restrictions=property_restrictions_list, Demographic_Coverage=coverage )
-
+        iv=[iv]
+    age_min = max(0, child_age - 7)
+    delay = [ 'UNIFORM', age_min, child_age + 7 ]
+    event = TriggeredCampaignEvent(camp, Start_Day=start_day, Event_Name="triggered_delayed_intervention",
+                                   Triggers=[camp.get_recv_trigger("Births", old=True)],
+                                   Intervention_List=iv,
+                                   Delay=delay,
+                                   Property_Restrictions=property_restrictions_list, Demographic_Coverage=coverage)
 
     return event
 
-def new_scheduled_intervention( 
-        camp, 
+
+def new_scheduled_intervention(
+        camp,
         efficacy=0.82,
         mode="Shedding",
         constant_period=0,
         decay_constant=6935.0,
-        start_day=1, 
-        coverage=1.0, 
+        start_day=1,
+        coverage=1.0,
         node_ids=None,
         property_restrictions_list=[],
-        co_event=None # expansion slot
-    ):
+        co_event=None  # expansion slot
+):
     """
     Create a new scheduled TyphoidVaccine intervention based on specified parameters.
 
@@ -191,17 +222,21 @@ def new_scheduled_intervention(
          ScheduledCampaignEvent: An instance of a scheduled campaign event with the TyphoidVaccine intervention.
     
     """
-    iv = new_intervention( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant )
+    iv = new_intervention(camp, efficacy=efficacy, mode=mode, constant_period=constant_period,
+                          decay_constant=decay_constant)
 
-    #event = common.ScheduledCampaignEvent( camp, Start_Day=start_day, Demographic_Coverage=coverage, Intervention_List=[ act_intervention, bcast_intervention ], Node_Ids=nodeIDs, Property_Restrictions=property_restrictions_list )
-    event = common.ScheduledCampaignEvent( camp, Start_Day=start_day, Demographic_Coverage=coverage, Intervention_List=[ iv ], Node_Ids=node_ids, Property_Restrictions=property_restrictions_list )
+    # event = common.ScheduledCampaignEvent( camp, Start_Day=start_day, Demographic_Coverage=coverage, Intervention_List=[ act_intervention, bcast_intervention ], Node_Ids=nodeIDs, Property_Restrictions=property_restrictions_list )
+    event = common.ScheduledCampaignEvent(camp, Start_Day=start_day, Demographic_Coverage=coverage,
+                                          Intervention_List=[iv], Node_Ids=node_ids,
+                                          Property_Restrictions=property_restrictions_list)
 
     return event
 
-def new_intervention_as_file( camp, start_day, filename=None ):
+
+def new_intervention_as_file(camp, start_day, filename=None):
     import emod_api.campaign as camp
-    camp.add( new_triggered_intervention( camp, start_day=start_day ), first=True )
+    camp.add(new_triggered_intervention(camp, start_day=start_day), first=True)
     if filename is None:
         filename = "TyphoidVaccine.json"
-    camp.save( filename )
+    camp.save(filename)
     return filename
