@@ -3,7 +3,18 @@ from emod_api.interventions import utils
 from emod_api.interventions import common
 import json
 
-def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, decay_constant=6935.0 ):
+def _get_waning( constant_period=0, decay_constant=0, expected_expiration=0 ):
+    Changing_Effect = None # for scope
+    if decay_constant>0:
+        Changing_Effect = s2c.get_class_with_defaults( "WaningEffectBoxExponential" )
+        Changing_Effect.Box_Duration = constant_period
+        Changing_Effect.Decay_Time_Constant = decay_constant
+    else:
+        Changing_Effect = s2c.get_class_with_defaults( "WaningEffectRandomBox" )
+        Changing_Effect.Expected_Discard_Time = expected_expiration 
+    return Changing_Effect 
+
+def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, decay_constant=0, expected_expiration=0 ):
     """
      Create a new TyphoidVaccine intervention with specified parameters. If you use this function directly, you'll need to distribute the intervention with a function like ScheduledCampaignEvent or TriggeredCampaignEvent from emod_api.interventions.common.
 
@@ -13,6 +24,8 @@ def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, d
          mode (str, optional): The mode of the intervention. Default is "Shedding".
          constant_period (float, optional): The constant period of the waning effect in days. Default is 0.
          decay_constant (float, optional): The decay time constant for the waning effect. Default is 6935.0.
+         expected_expiration (float, optional): The mean duration before efficacy becomes 0. If this is set to non-zero value, the constant_period and decay_constant are ignored. These are two different modes of waning.
+
 
      Returns:
          TyphoidVaccine: A fully configured instance of the TyphoidVaccine intervention with the specified parameters.
@@ -21,13 +34,11 @@ def new_intervention( camp, efficacy=0.82, mode="Shedding", constant_period=0, d
     intervention = s2c.get_class_with_defaults( "TyphoidVaccine", camp.schema_path )
     intervention.Effect = efficacy
     intervention.Mode = mode
-    intervention.Changing_Effect = s2c.get_class_with_defaults( "WaningEffectBoxExponential" )
+    intervention.Changing_Effect = _get_waning( constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration ) 
     intervention.Changing_Effect.Initial_Effect = efficacy
-    intervention.Changing_Effect.Box_Duration = constant_period
-    intervention.Changing_Effect.Decay_Time_Constant = decay_constant
     return intervention
 
-def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_constant=6935.0 ):
+def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_constant=0, expected_expiration=0 ):
     """
      Create a new 'SimpleVaccine' intervention with specified parameters. If you use this function directly, you'll need to distribute the intervention with a function like ScheduledCampaignEvent or TriggeredCampaignEvent from emod_api.interventions.common.
 
@@ -37,6 +48,7 @@ def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_c
          mode (str, optional): The mode of the intervention. Default is "Acquisition" Can also be "Transmission" or "All".
          constant_period (float, optional): The constant period of the waning effect in days. Default is 0.
          decay_constant (float, optional): The decay time constant for the waning effect. Default is 6935.0.
+         expected_expiration (float, optional): The mean duration before efficacy becomes 0. If this is set to non-zero value, the constant_period and decay_constant are ignored. These are two different modes of waning.
 
      Returns:
          SimpleVaccine: A fully configured instance of the SimpleVaccine intervention with the specified parameters.
@@ -52,10 +64,8 @@ def new_vax( camp, efficacy=0.82, mode="Acquisition", constant_period=0, decay_c
     else:
         raise ValueError( f"mode {mode} not recognized. Options are: 'Acquisition', 'Transmission', or 'All'." )
 
-    intervention.Waning_Config = s2c.get_class_with_defaults( "WaningEffectBoxExponential" )
+    intervention.Waning_Config = _get_waning( constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration ) 
     intervention.Waning_Config.Initial_Effect = efficacy
-    intervention.Waning_Config.Box_Duration = constant_period
-    intervention.Waning_Config.Decay_Time_Constant = decay_constant
     return intervention
 
 def new_triggered_intervention( 
@@ -101,13 +111,14 @@ def new_routine_immunization(
         efficacy=0.82,
         mode="Acquisition",
         constant_period=0,
-        decay_constant=6935.0,
+        decay_constant=0,
+        expected_expiration=0,
         start_day=1, 
         child_age=9*30,
         coverage=1.0, 
         node_ids=None,
         property_restrictions_list=[],
-        co_event=None # expansion slot
+        co_event="VaccineDistributed" # expansion slot
     ):
     """
     Create a new delayed, birth-triggered SimpleVaccine intervention based on specified parameters. Does not add to campaign.
@@ -118,6 +129,7 @@ def new_routine_immunization(
          mode (str, optional): The mode of the intervention. Default is "Shedding".
          constant_period (float, optional): The constant period of the waning effect in days. Default is 0.
          decay_constant (float, optional): The decay time constant for the waning effect. Default is 6935.0.
+         expected_expiration (float, optional): The mean duration before efficacy becomes 0. If this is set to non-zero value, the constant_period and decay_constant are ignored. These are two different modes of waning.
          start_day (int, optional): The day on which the intervention starts. Default is 1.
          child_age (int, optional): The age of the person when they get the vaccine. Defaults to 9 months. Vaccines are actually distribute +/- 7 days.
          coverage (float, optional): Demographic coverage of the intervention. Default is 1.0.
@@ -128,14 +140,23 @@ def new_routine_immunization(
      Returns:
          TriggeredCampaignEvent: An instance of a triggered campaign event with the TyphoidVaccine intervention.
     """
-    iv = new_vax( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant )
+    iv = new_vax( camp, efficacy=efficacy, mode=mode, constant_period=constant_period, decay_constant=decay_constant, expected_expiration=expected_expiration )
+    if co_event:
+        signal = common.BroadcastEvent( camp, co_event )
+        iv = [ iv, signal ]
+    else:
+        iv = [ iv ]
     age_min = max(0,child_age-7)
     delay = {
             "Delay_Period_Min": age_min,
             "Delay_Period_Max": child_age+7
             }
 
-    event = common.triggered_campaign_delay_event( camp, start_day=start_day, trigger="Births", delay=delay, intervention=iv, ip_targeting=property_restrictions_list, coverage=coverage )
+    #event = common.triggered_campaign_delay_event( camp, start_day=start_day, trigger="Births", delay=delay, intervention=iv, ip_targeting=property_restrictions_list, coverage=coverage )
+    delay_iv = common.DelayedIntervention( camp, Configs=iv, Delay_Dict = delay )
+
+    event = common.TriggeredCampaignEvent( camp, Start_Day=start_day, Event_Name="triggered_delayed_intervention", Triggers=[ "Births"], Intervention_List=[delay_iv], Property_Restrictions=property_restrictions_list, Demographic_Coverage=coverage )
+
 
     return event
 
